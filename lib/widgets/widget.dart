@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../services/auth_service.dart';
+import '../screens/auth/login_screen.dart';
 
-class CustomSidebar extends StatelessWidget {
+class CustomSidebar extends ConsumerWidget {
   const CustomSidebar({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: 70, // Lebar sangat tipis
       decoration: BoxDecoration(
@@ -87,8 +90,33 @@ class CustomSidebar extends StatelessWidget {
                   Icons.logout_outlined,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                onPressed: () {
-                  // Logout logic
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Konfirmasi Logout'),
+                      content: const Text('Apakah Anda yakin ingin logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Ya'),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirm == true) {
+                    final authService = ref.read(authServicePod);
+                    await authService.signOut();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
                 },
                 tooltip: 'Logout',
               ),

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
+import '../admin/dashboard_screen.dart';
+import '../officer/dashboard_screen.dart';
+import '../borrower/dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -154,6 +157,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(state.errorMessage!)),
+                        );
+                      }
+                    } else {
+                      // Login sukses, cek role dan arahkan ke halaman sesuai role
+                      await Future.delayed(const Duration(milliseconds: 500)); // Beri sedikit delay agar metadata user tersedia
+                      
+                      final userRole = authService.getUserRole();
+                      Widget targetScreen;
+                      
+                      switch (userRole) {
+                        case 'admin':
+                          targetScreen = const AdminDashboardScreen();
+                          break;
+                        case 'officer':
+                          targetScreen = const OfficerDashboardScreen();
+                          break;
+                        case 'borrower':
+                          targetScreen = const BorrowerDashboardScreen();
+                          break;
+                        default:
+                          // Jika role tidak dikenal, kembali ke login
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Role tidak dikenal')),
+                            );
+                          }
+                          return;
+                      }
+                      
+                      // Pindah ke halaman sesuai role dengan pushReplacement agar tidak bisa kembali ke login
+                      if (mounted) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => targetScreen),
                         );
                       }
                     }

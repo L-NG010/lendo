@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/auth_service.dart';
+import '../auth/login_screen.dart';
 
 class OfficerDashboardScreen extends ConsumerWidget {
   const OfficerDashboardScreen({super.key});
@@ -18,7 +19,30 @@ class OfficerDashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await authService.signOut();
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Konfirmasi Logout'),
+                  content: const Text('Apakah Anda yakin ingin logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Batal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('Ya'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirm == true) {
+                await authService.signOut();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              }
             },
           ),
         ],

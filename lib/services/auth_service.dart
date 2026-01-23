@@ -50,6 +50,8 @@ class AuthService {
       );
       
       if (response.user != null) {
+        // Tunggu sebentar untuk memastikan metadata sudah termuat
+        await Future.delayed(const Duration(milliseconds: 100));
         return AuthState(currentUser: response.user);
       } else {
         return AuthState(errorMessage: 'Invalid credentials');
@@ -95,7 +97,12 @@ class AuthService {
 
   String? getUserRole() {
     final user = _supabase.auth.currentUser;
-    return user?.userMetadata?['role'] as String?;
+    if (user == null) return null;
+    
+    // Ambil role dari user metadata
+    String? role = user.userMetadata?['role'] as String?;
+    
+    return role;
   }
 
   bool isAdmin() => getUserRole() == 'admin';
