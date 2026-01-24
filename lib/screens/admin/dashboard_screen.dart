@@ -88,28 +88,28 @@ class AdminDashboardScreen extends ConsumerWidget {
                         icon: Icons.add_circle_outline,
                         label: 'Add Asset',
                         onPressed: () {
-                          // TODO: Implement add asset action
+                          Navigator.pushNamed(context, '/assets');
                         },
                       ),
                       QuickAction(
                         icon: Icons.person_add_alt_1_outlined,
                         label: 'Add User',
                         onPressed: () {
-                          // TODO: Implement add user action
+                          Navigator.pushNamed(context, '/users');
                         },
                       ),
                       QuickAction(
                         icon: Icons.request_quote_outlined,
                         label: 'New Loan',
                         onPressed: () {
-                          // TODO: Implement new loan action
+                          Navigator.pushNamed(context, '/loans');
                         },
                       ),
                       QuickAction(
                         icon: Icons.category_outlined,
                         label: 'Category',
                         onPressed: () {
-                          // TODO: Implement category action
+                          Navigator.pushNamed(context, '/categories');
                         },
                       ),
                     ],

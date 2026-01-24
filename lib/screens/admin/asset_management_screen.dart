@@ -11,7 +11,7 @@ class AssetManagementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Sample data based on the provided INSERT statement
-    final assets = [
+    final allAssets = [
       Asset(
         id: '1',
         name: 'printer',
@@ -49,6 +49,21 @@ class AssetManagementScreen extends ConsumerWidget {
         price: '500000',
       ),
     ];
+    
+    // Extract unique categories
+    final categories = {'All', ...allAssets.map((asset) => asset.category)};
+    
+    // State for filtering
+    String selectedCategory = 'All';
+    String searchQuery = '';
+    
+    // Filter assets based on category and search query
+    final filteredAssets = allAssets.where((asset) {
+      final matchesCategory = selectedCategory == 'All' || asset.category == selectedCategory;
+      final matchesSearch = asset.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                            asset.code.toLowerCase().contains(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -71,15 +86,74 @@ class AssetManagementScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Filter controls
+            Row(
+              children: [
+                // Search bar
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    margin: const EdgeInsets.only(right: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search assets...',
+                        hintStyle: TextStyle(color: AppColors.gray),
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: AppColors.gray),
+                      ),
+                      onChanged: (value) {
+                        searchQuery = value;
+                      },
+                    ),
+                  ),
+                ),
+                // Category filter dropdown
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: DropdownButton<String>(
+                      value: selectedCategory,
+                      underline: Container(),
+                      isExpanded: true,
+                      hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      items: categories.map((String category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(category, style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        selectedCategory = newValue ?? 'All';
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: ListView.builder(
-                itemCount: assets.length,
+                itemCount: filteredAssets.length,
                 itemBuilder: (context, index) {
-                  final asset = assets[index];
-                  return AssetCard(
-                    asset: asset,
-                    onEdit: () => _showUpdateDialog(context, asset),
-                    onDelete: () => _showDeleteDialog(context, asset),
+                  final asset = filteredAssets[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AssetCard(
+                      asset: asset,
+                      onEdit: () => _showUpdateDialog(context, asset),
+                      onDelete: () => _showDeleteDialog(context, asset),
+                    ),
                   );
                 },
               ),
@@ -107,68 +181,33 @@ class AssetManagementScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Image upload section
                 Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.outline,
-                      width: 1,
-                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.outline, width: 1),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.add_box,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'New Asset',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Fill in asset details',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.gray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Icon(Icons.image_outlined, color: AppColors.gray, size: 30),
+                      Text('Upload Image', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      TextButton(
+                        onPressed: () {
+                          // Handle image selection
+                        },
+                        child: Text('Choose File', style: TextStyle(color: AppColors.primary, fontSize: 12)),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildAddField('Name:', ''),
-                      _buildAddField('Code:', ''),
-                      _buildAddField('Category:', ''),
-                      _buildAddField('Status:', ''),
-                      _buildAddField('Price:', ''),
                     ],
                   ),
                 ),
+                _buildAddField('Name:', ''),
+                _buildAddField('Code:', ''),
+                _buildAddField('Category:', ''),
+                _buildAddField('Status:', ''),
+                _buildAddField('Price:', ''),
               ],
             ),
           ),
@@ -200,7 +239,7 @@ class AssetManagementScreen extends ConsumerWidget {
 
   Widget _buildAddField(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -216,19 +255,21 @@ class AssetManagementScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.secondary,
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: AppColors.outline,
                 width: 1,
               ),
             ),
-            child: Text(
-              value.isEmpty ? 'Enter $label' : value,
-              style: TextStyle(
-                fontSize: 14,
-                color: value.isEmpty ? AppColors.gray : AppColors.white,
+            child: TextFormField(
+              initialValue: value.isEmpty ? '' : value,
+              decoration: InputDecoration(
+                hintText: 'Enter ${label.toLowerCase()}',
+                hintStyle: TextStyle(color: AppColors.gray),
+                border: InputBorder.none,
               ),
+              style: TextStyle(color: AppColors.white),
             ),
           ),
         ],
@@ -250,22 +291,34 @@ class AssetManagementScreen extends ConsumerWidget {
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Asset Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                // Image upload section
+                Container(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.outline, width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.image_outlined, color: AppColors.gray, size: 30),
+                      Text('Current Image', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      TextButton(
+                        onPressed: () {
+                          // Handle image selection
+                        },
+                        child: Text('Change Image', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildDetailField('Name:', asset.name),
-                _buildDetailField('Code:', asset.code),
-                _buildDetailField('Category:', asset.category),
-                _buildDetailField('Status:', asset.status),
-                if (asset.price != null) _buildDetailField('Price:', 'Rp ${asset.price}'),
+                _buildAddField('Name:', asset.name),
+                _buildAddField('Code:', asset.code),
+                _buildAddField('Category:', asset.category),
+                _buildAddField('Status:', asset.status),
+                _buildAddField('Price:', asset.price ?? ''),
               ],
             ),
           ),
@@ -275,7 +328,16 @@ class AssetManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               child: Text(
-                'Close',
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Save',
                 style: TextStyle(color: AppColors.primary),
               ),
             ),
@@ -289,10 +351,9 @@ class AssetManagementScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 80,
+          Expanded(
+            flex: 1,
             child: Text(
               label,
               style: TextStyle(
@@ -303,6 +364,7 @@ class AssetManagementScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
+            flex: 2,
             child: Text(
               value,
               style: TextStyle(
@@ -336,7 +398,7 @@ class AssetManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop(); // Close dialog (cancel)
               },
               child: Text(
-                'No',
+                'Cancel',
                 style: TextStyle(color: AppColors.gray),
               ),
             ),
@@ -347,8 +409,8 @@ class AssetManagementScreen extends ConsumerWidget {
                 _showSuccessMessage(context, 'Asset "${asset.name}" deleted successfully');
               },
               child: Text(
-                'Yes',
-                style: TextStyle(color: Colors.red),
+                'Delete',
+                style: TextStyle(color: AppColors.primary),
               ),
             ),
           ],

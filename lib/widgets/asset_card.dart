@@ -20,13 +20,13 @@ class AssetCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: AppColors.outline,
           width: 1,
         ),
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,15 +37,15 @@ class AssetCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
                         _getAssetIcon(asset.category),
                         color: AppColors.primary,
-                        size: 24,
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -56,16 +56,15 @@ class AssetCard extends StatelessWidget {
                           Text(
                             asset.name,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.white,
                             ),
                           ),
-                          const SizedBox(height: 2),
                           Text(
                             'ID: ${asset.id}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               color: AppColors.gray,
                             ),
                           ),
@@ -78,22 +77,34 @@ class AssetCard extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.edit, color: AppColors.primary, size: 20),
+                    icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
                     onPressed: onEdit,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints.tight(Size(32, 32)),
                   ),
                   IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                    icon: Icon(Icons.delete, color: AppColors.red, size: 18),
                     onPressed: onDelete,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints.tight(Size(32, 32)),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          _buildDetailRow('Code:', asset.code),
-          _buildDetailRow('Category:', asset.category),
-          _buildStatusRow('Status:', asset.status),
-          if (asset.price != null) _buildDetailRow('Price:', 'Rp ${asset.price}'),
+          Row(
+            children: [
+              Expanded(child: _buildDetailRow('Code:', asset.code)),
+              Expanded(child: _buildStatusRow('Status:', asset.status)),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(child: _buildDetailRow('Category:', asset.category)),
+              if (asset.price != null) Expanded(child: _buildDetailRow('Price:', 'Rp ${asset.price}')),
+            ],
+          ),
         ],
       ),
     );
@@ -149,9 +160,9 @@ class AssetCard extends StatelessWidget {
   Widget _buildStatusRow(String label, String status) {
     Color statusColor = AppColors.gray;
     if (status.toLowerCase() == 'available') {
-      statusColor = Colors.green;
-    } else if (status.toLowerCase() == 'borrowed') {
       statusColor = AppColors.primary;
+    } else if (status.toLowerCase() == 'borrowed') {
+      statusColor = AppColors.outline;
     } else if (status.toLowerCase() == 'maintenance') {
       statusColor = Colors.orange;
     }

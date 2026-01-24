@@ -79,15 +79,71 @@ class LoanManagementScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Filter controls
+            Row(
+              children: [
+                // Search bar
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    margin: const EdgeInsets.only(right: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search loans...',
+                        hintStyle: TextStyle(color: AppColors.gray),
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: AppColors.gray),
+                      ),
+                    ),
+                  ),
+                ),
+                // Status filter dropdown
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: DropdownButton<String>(
+                      value: 'All',
+                      underline: Container(),
+                      isExpanded: true,
+                      hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      items: ['All', 'pending', 'approved', 'returned', 'rejected'].map((String status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Text(status, style: TextStyle(color: AppColors.white, fontSize: 12)),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        // Handle status change
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: ListView.builder(
                 itemCount: loans.length,
                 itemBuilder: (context, index) {
                   final loan = loans[index];
-                  return LoanCard(
-                    loan: loan,
-                    onEdit: () => _showUpdateDialog(context, loan),
-                    onDelete: () => _showDeleteDialog(context, loan),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: LoanCard(
+                      loan: loan,
+                      onEdit: () => _showUpdateDialog(context, loan),
+                      onDelete: () => _showDeleteDialog(context, loan),
+                    ),
                   );
                 },
               ),
@@ -113,68 +169,11 @@ class LoanManagementScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.outline,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.library_books,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'New Loan',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Fill in loan details',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.gray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildAddField('User ID:', ''),
-                      _buildAddField('Status:', ''),
-                      _buildAddField('Due Date:', ''),
-                      _buildAddField('Loan Date:', ''),
-                      _buildAddField('Reason:', ''),
-                    ],
-                  ),
-                ),
+                _buildAddField('User ID:', ''),
+                _buildAddField('Status:', ''),
+                _buildAddField('Due Date:', ''),
+                _buildAddField('Loan Date:', ''),
+                _buildAddField('Reason:', ''),
               ],
             ),
           ),
@@ -206,7 +205,7 @@ class LoanManagementScreen extends ConsumerWidget {
 
   Widget _buildAddField(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -222,19 +221,21 @@ class LoanManagementScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.secondary,
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: AppColors.outline,
                 width: 1,
               ),
             ),
-            child: Text(
-              value.isEmpty ? 'Enter $label' : value,
-              style: TextStyle(
-                fontSize: 14,
-                color: value.isEmpty ? AppColors.gray : AppColors.white,
+            child: TextFormField(
+              initialValue: value.isEmpty ? '' : value,
+              decoration: InputDecoration(
+                hintText: 'Enter ${label.toLowerCase()}',
+                hintStyle: TextStyle(color: AppColors.gray),
+                border: InputBorder.none,
               ),
+              style: TextStyle(color: AppColors.white),
             ),
           ),
         ],
@@ -256,28 +257,12 @@ class LoanManagementScreen extends ConsumerWidget {
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Loan Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildDetailField('Loan ID:', loan.id),
-                _buildDetailField('User ID:', '${loan.userId.substring(0, 8)}...'),
-                _buildDetailField('Status:', loan.status),
-                _buildDetailField('Loan Date:', _formatDate(loan.loanDate)),
-                _buildDetailField('Due Date:', _formatDate(loan.dueDate)),
-                if (loan.returnedAt != null) 
-                  _buildDetailField('Returned:', _formatDate(loan.returnedAt!)),
-                if (loan.lateDays != null && loan.lateDays != '0')
-                  _buildDetailField('Late Days:', '${loan.lateDays} days'),
-                if (loan.reason != null) 
-                  _buildDetailField('Reason:', loan.reason!),
+                _buildAddField('User ID:', loan.userId),
+                _buildAddField('Status:', loan.status),
+                _buildAddField('Due Date:', _formatDate(loan.dueDate)),
+                _buildAddField('Loan Date:', _formatDate(loan.loanDate)),
+                _buildAddField('Reason:', loan.reason ?? ''),
               ],
             ),
           ),
@@ -287,7 +272,16 @@ class LoanManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               child: Text(
-                'Close',
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Save',
                 style: TextStyle(color: AppColors.primary),
               ),
             ),
@@ -301,10 +295,9 @@ class LoanManagementScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
+          Expanded(
+            flex: 1,
             child: Text(
               label,
               style: TextStyle(
@@ -315,6 +308,7 @@ class LoanManagementScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
+            flex: 2,
             child: Text(
               value,
               style: TextStyle(
@@ -348,7 +342,7 @@ class LoanManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop(); // Close dialog (cancel)
               },
               child: Text(
-                'No',
+                'Cancel',
                 style: TextStyle(color: AppColors.gray),
               ),
             ),
@@ -359,8 +353,8 @@ class LoanManagementScreen extends ConsumerWidget {
                 _showSuccessMessage(context, 'Loan #${loan.id} deleted successfully');
               },
               child: Text(
-                'Yes',
-                style: TextStyle(color: Colors.red),
+                'Delete',
+                style: TextStyle(color: AppColors.primary),
               ),
             ),
           ],

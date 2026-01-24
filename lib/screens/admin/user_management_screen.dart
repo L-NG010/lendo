@@ -22,7 +22,7 @@ class UserManagementScreen extends ConsumerWidget {
       ),
       UserModel(
         id: '2',
-        name: 'Jane Smith',
+        name: 'Masum',
         email: 'jane@example.com',
         phoneNumber: '+628987654321',
         role: 'officer',
@@ -67,15 +67,71 @@ class UserManagementScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Filter controls
+            Row(
+              children: [
+                // Search bar
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    margin: const EdgeInsets.only(right: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search users...',
+                        hintStyle: TextStyle(color: AppColors.gray),
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: AppColors.gray),
+                      ),
+                    ),
+                  ),
+                ),
+                // Role filter dropdown
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: DropdownButton<String>(
+                      value: 'All',
+                      underline: Container(),
+                      isExpanded: true,
+                      hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      items: ['All', 'admin', 'officer', 'borrower'].map((String role) {
+                        return DropdownMenuItem(
+                          value: role,
+                          child: Text(role, style: TextStyle(color: AppColors.white, fontSize: 12)),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        // Handle role change
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: ListView.builder(
                 itemCount: users.length,
                 itemBuilder: (context, index) {
                   final user = users[index];
-                  return UserCard(
-                    user: user,
-                    onEdit: () => _showUpdateDialog(context, user),
-                    onDelete: () => _showDeleteDialog(context, user),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: UserCard(
+                      user: user,
+                      onEdit: () => _showUpdateDialog(context, user),
+                      onDelete: () => _showDeleteDialog(context, user),
+                    ),
                   );
                 },
               ),
@@ -101,68 +157,11 @@ class UserManagementScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.outline,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.person_add,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'New User',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Fill in user details',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.gray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildAddField('Name:', ''),
-                      _buildAddField('Email:', ''),
-                      _buildAddField('Phone Number:', ''),
-                      _buildAddField('Role:', ''),
-                      _buildAddField('Status:', ''),
-                    ],
-                  ),
-                ),
+
+                _buildAddField('Name:', ''),
+                _buildAddField('Email:', ''),
+                _buildAddField('Phone Number:', ''),
+                _buildRoleDropdown('Role:', ''),
               ],
             ),
           ),
@@ -194,7 +193,7 @@ class UserManagementScreen extends ConsumerWidget {
 
   Widget _buildAddField(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -210,18 +209,67 @@ class UserManagementScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.secondary,
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: AppColors.outline,
                 width: 1,
               ),
             ),
-            child: Text(
-              value.isEmpty ? 'Enter $label' : value,
-              style: TextStyle(
-                fontSize: 14,
-                color: value.isEmpty ? AppColors.gray : AppColors.white,
+            child: TextFormField(
+              initialValue: value.isEmpty ? '' : value,
+              decoration: InputDecoration(
+                hintText: 'Enter ${label.toLowerCase()}',
+                hintStyle: TextStyle(color: AppColors.gray),
+                border: InputBorder.none,
+              ),
+              style: TextStyle(color: AppColors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleDropdown(String label, String currentValue) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: AppColors.outline,
+                width: 1,
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: currentValue.isEmpty ? null : currentValue,
+                hint: Text('Select role', style: TextStyle(color: AppColors.gray)),
+                isExpanded: true,
+                items: ['admin', 'officer', 'borrower'].map((String role) {
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(role, style: TextStyle(color: AppColors.white)),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  // Handle role change
+                },
               ),
             ),
           ),
@@ -244,22 +292,12 @@ class UserManagementScreen extends ConsumerWidget {
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'User Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildDetailField('Name:', user.name),
-                _buildDetailField('Email:', user.email),
-                _buildDetailField('Phone:', user.phoneNumber),
-                _buildDetailField('Role:', user.role),
-                _buildDetailField('Status:', user.status),
+
+                _buildAddField('Name:', user.name),
+                _buildAddField('Email:', user.email),
+                _buildAddField('Phone Number:', user.phoneNumber),
+                _buildRoleDropdown('Role:', user.role),
               ],
             ),
           ),
@@ -269,7 +307,16 @@ class UserManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               child: Text(
-                'Close',
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Save',
                 style: TextStyle(color: AppColors.primary),
               ),
             ),
@@ -283,10 +330,9 @@ class UserManagementScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
+          Expanded(
+            flex: 1,
             child: Text(
               label,
               style: TextStyle(
@@ -297,6 +343,7 @@ class UserManagementScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
+            flex: 2,
             child: Text(
               value,
               style: TextStyle(
@@ -330,7 +377,7 @@ class UserManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop(); // Close dialog (cancel)
               },
               child: Text(
-                'No',
+                'Cancel',
                 style: TextStyle(color: AppColors.gray),
               ),
             ),
@@ -341,8 +388,8 @@ class UserManagementScreen extends ConsumerWidget {
                 _showSuccessMessage(context, 'User "${user.name}" deleted successfully');
               },
               child: Text(
-                'Yes',
-                style: TextStyle(color: Colors.red),
+                'Delete',
+                style: TextStyle(color: AppColors.primary),
               ),
             ),
           ],
