@@ -6,6 +6,12 @@ import 'package:lendo/services/auth_service.dart';
 import 'package:lendo/screens/auth/login.dart';
 import 'package:lendo/screens/admin/dashboard_screen.dart';
 import 'package:lendo/screens/admin/log_activity_screen.dart';
+import 'package:lendo/screens/admin/asset_management_screen.dart';
+import 'package:lendo/screens/admin/user_management_screen.dart';
+import 'package:lendo/screens/admin/loan_management_screen.dart';
+import 'package:lendo/screens/admin/category_management_screen.dart';
+import 'package:lendo/screens/admin/profile_screen.dart';
+import 'package:lendo/screens/admin/settings_screen.dart';
 import 'package:lendo/screens/officer/dashboard_screen.dart';
 import 'package:lendo/screens/borrower/dashboard_screen.dart';
 
@@ -62,6 +68,12 @@ class MyApp extends ConsumerWidget {
         '/officer-dashboard': (context) => const OfficerDashboardScreen(),
         '/borrower-dashboard': (context) => const BorrowerDashboardScreen(),
         '/log-activities': (context) => const LogActivityScreen(),
+        '/assets': (context) => const AssetManagementScreen(),
+        '/users': (context) => const UserManagementScreen(),
+        '/loans': (context) => const LoanManagementScreen(),
+        '/categories': (context) => const CategoryManagementScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
     );
   }

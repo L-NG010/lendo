@@ -50,3 +50,23 @@ class Activity {
     );
   }
 }
+
+class ActivityModel {
+  final String action;
+  final String entity;
+  final String entityName;
+  final String entityId;
+  final String userId;
+  final String timestamp;
+  final String color;
+
+  ActivityModel({
+    required this.action,
+    required this.entity,
+    required this.entityName,
+    required this.entityId,
+    required this.userId,
+    required this.timestamp,
+    required this.color,
+  });
+}

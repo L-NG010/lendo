@@ -95,6 +95,12 @@ class CustomSidebar extends ConsumerWidget {
                       onTap: () => Navigator.of(context).pushNamed('/log-activities'),
                     ),
                     _SidebarMenuItem(
+                      icon: Icons.settings_outlined,
+                      label: 'Settings',
+                      isActive: currentRoute == '/settings',
+                      onTap: () => Navigator.of(context).pushNamed('/settings'),
+                    ),
+                    _SidebarMenuItem(
                       icon: Icons.person_outline,
                       label: 'Profile',
                       isActive: currentRoute == '/profile',
