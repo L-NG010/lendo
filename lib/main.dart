@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/config/supabase_config.dart';
 import 'package:lendo/services/auth_service.dart';
-import 'package:lendo/screens/auth/login_screen.dart';
+import 'package:lendo/screens/auth/login.dart';
 import 'package:lendo/screens/admin/dashboard_screen.dart';
+import 'package:lendo/screens/admin/log_activity_screen.dart';
 import 'package:lendo/screens/officer/dashboard_screen.dart';
 import 'package:lendo/screens/borrower/dashboard_screen.dart';
 
@@ -23,7 +24,28 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authServiceProvider);
+    // Check for existing session
+    final authService = ref.watch(authServicePod);
+    final currentUser = authService.getCurrentUser();
+    
+    String initialRoute = '/login';
+    if (currentUser != null) {
+      // User has active session, redirect to appropriate dashboard
+      final userRole = authService.getUserRole();
+      switch (userRole) {
+        case 'admin':
+          initialRoute = '/admin-dashboard';
+          break;
+        case 'officer':
+          initialRoute = '/officer-dashboard';
+          break;
+        case 'borrower':
+          initialRoute = '/borrower-dashboard';
+          break;
+        default:
+          initialRoute = '/login';
+      }
+    }
     
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -31,55 +53,16 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData(
         fontFamily: 'Poppins',
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          primary: AppColors.primary,
-          onPrimary: AppColors.white,
-          secondary: AppColors.secondary,
-          surface: AppColors.background,
-          onSurfaceVariant: AppColors.gray,
-          outline: AppColors.lightGreen,
-        ),
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: authState.when(
-        data: (state) {
-          if (state.isLoading) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          
-          if (state.currentUser != null) {
-            // User logged in, redirect to appropriate dashboard based on role
-            final authService = AuthService();
-            final userRole = authService.getUserRole();
-            
-            switch (userRole) {
-              case 'admin':
-                return const AdminDashboardScreen();
-              case 'officer':
-                return const OfficerDashboardScreen();
-              case 'borrower':
-                return const BorrowerDashboardScreen();
-              default:
-                // Invalid role, redirect to login
-                return const LoginScreen();
-            }
-          } else {
-            // No user logged in, show login screen
-            return const LoginScreen();
-          }
-        },
-        loading: () => const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (_, __) => const LoginScreen(),
-      ),
+      initialRoute: initialRoute,
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/admin-dashboard': (context) => const AdminDashboardScreen(),
+        '/officer-dashboard': (context) => const OfficerDashboardScreen(),
+        '/borrower-dashboard': (context) => const BorrowerDashboardScreen(),
+        '/log-activities': (context) => const LogActivityScreen(),
+      },
     );
   }
 }

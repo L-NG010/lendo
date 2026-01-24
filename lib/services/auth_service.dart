@@ -104,6 +104,10 @@ class AuthService {
     
     return role;
   }
+  
+  User? getCurrentUser() {
+    return _supabase.auth.currentUser;
+  }
 
   bool isAdmin() => getUserRole() == 'admin';
   bool isOfficer() => getUserRole() == 'officer';

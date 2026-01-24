@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
-import '../screens/auth/login.dart';
 import 'package:lendo/config/app_config.dart';
 
 
@@ -51,40 +50,59 @@ class CustomSidebar extends ConsumerWidget {
           ),
           
           // Menu items
-           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _SidebarMenuItem(
-                  icon: Icons.dashboard_outlined,
-                  label: 'Dashboard',
-                  isActive: true,
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Assets',
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.manage_accounts_outlined,
-                  label: 'Users',
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.receipt_long_outlined,
-                  label: 'Loans',
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.category_outlined,
-                  label: 'Categories',
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.history_outlined,
-                  label: 'Logs',
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                ),
-              ],
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final currentRoute = ModalRoute.of(context)?.settings.name ?? '';
+                
+                return ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _SidebarMenuItem(
+                      icon: Icons.dashboard_outlined,
+                      label: 'Dashboard',
+                      isActive: currentRoute == '/admin-dashboard',
+                      onTap: () => Navigator.of(context).pushNamed('/admin-dashboard'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'Assets',
+                      isActive: currentRoute == '/assets',
+                      onTap: () => Navigator.of(context).pushNamed('/assets'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.manage_accounts_outlined,
+                      label: 'Users',
+                      isActive: currentRoute == '/users',
+                      onTap: () => Navigator.of(context).pushNamed('/users'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.receipt_long_outlined,
+                      label: 'Loans',
+                      isActive: currentRoute == '/loans',
+                      onTap: () => Navigator.of(context).pushNamed('/loans'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.category_outlined,
+                      label: 'Categories',
+                      isActive: currentRoute == '/categories',
+                      onTap: () => Navigator.of(context).pushNamed('/categories'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.history_outlined,
+                      label: 'Logs',
+                      isActive: currentRoute == '/log-activities',
+                      onTap: () => Navigator.of(context).pushNamed('/log-activities'),
+                    ),
+                    _SidebarMenuItem(
+                      icon: Icons.person_outline,
+                      label: 'Profile',
+                      isActive: currentRoute == '/profile',
+                      onTap: () => Navigator.of(context).pushNamed('/profile'),
+                    ),
+                  ],
+                );
+              }
             ),
           ),
           
@@ -127,10 +145,7 @@ class CustomSidebar extends ConsumerWidget {
                   if (confirm == true) {
                     final authService = ref.read(authServicePod);
                     await authService.signOut();
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
                   }
                 },
                 tooltip: 'Logout',
@@ -141,16 +156,20 @@ class CustomSidebar extends ConsumerWidget {
       ),
     );
   }
+  
+
 }
 
 class _SidebarMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
   final bool isActive;
 
   const _SidebarMenuItem({
     required this.icon,
     required this.label,
+    required this.onTap,
     this.isActive = false,
   });
 
@@ -159,9 +178,7 @@ class _SidebarMenuItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.primary.withOpacity(0.1)
-            : Colors.transparent,
+        color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Tooltip(
@@ -173,13 +190,9 @@ class _SidebarMenuItem extends StatelessWidget {
               icon: Icon(
                 icon,
                 size: 24,
-                color: isActive
-                    ? AppColors.primary
-                    : AppColors.gray,
+                color: isActive ? AppColors.primary : AppColors.gray,
               ),
-              onPressed: () {
-                // Navigation logic
-              },
+              onPressed: onTap,
             ),
           ],
         ),

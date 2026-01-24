@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/auth_service.dart';
-import '../auth/login_screen.dart';
+import '../auth/login.dart';
+import 'package:lendo/config/app_config.dart';
 
 class BorrowerDashboardScreen extends ConsumerWidget {
   const BorrowerDashboardScreen({super.key});
@@ -13,7 +14,7 @@ class BorrowerDashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Borrower Dashboard'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -47,10 +48,13 @@ class BorrowerDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text(
-          'Welcome to Borrower Dashboard',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: const Center(
+          child: Text(
+            'Welcome to Borrower Dashboard',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );

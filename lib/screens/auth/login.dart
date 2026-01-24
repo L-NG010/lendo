@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
-import '../admin/dashboard_screen.dart';
-import '../officer/dashboard_screen.dart';
-import '../borrower/dashboard_screen.dart';
+import 'package:lendo/config/app_config.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -50,7 +48,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Text(
                     'Email',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: AppColors.gray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -59,20 +57,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextFormField(
                 controller: _emailController,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  color: AppColors.white,
                   fontSize: 14
                 ),
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
+                      color: AppColors.secondary,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.outline,
+                      color: AppColors.outline,
                     ),
                   ),
                   hintText: 'Input Email',
@@ -93,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Text(
                     'Password',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: AppColors.gray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -103,20 +101,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  color: AppColors.white,
                   fontSize: 14
                 ),
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
+                      color: AppColors.secondary,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.outline,
+                      color: AppColors.outline,
                     ),
                   ),
                   hintText: 'Input Password',
@@ -127,9 +125,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: AppColors.gray,
                     ),
                     onPressed: () {
                       setState(() {
@@ -160,24 +158,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         );
                       }
                     } else {
-                      // Login sukses, cek role dan arahkan ke halaman sesuai role
+// Login sukses, cek role dan arahkan ke halaman sesuai role
                       await Future.delayed(const Duration(milliseconds: 500)); // Beri sedikit delay agar metadata user tersedia
                       
                       final userRole = authService.getUserRole();
-                      Widget targetScreen;
+                      String route;
                       
                       switch (userRole) {
                         case 'admin':
-                          targetScreen = const AdminDashboardScreen();
+                          route = '/admin-dashboard';
                           break;
                         case 'officer':
-                          targetScreen = const OfficerDashboardScreen();
+                          route = '/officer-dashboard';
                           break;
                         case 'borrower':
-                          targetScreen = const BorrowerDashboardScreen();
+                          route = '/borrower-dashboard';
                           break;
                         default:
-                          // Jika role tidak dikenal, kembali ke login
+                          // Jika role tidak dikenal, tetap di login
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Role tidak dikenal')),
@@ -186,16 +184,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           return;
                       }
                       
-                      // Pindah ke halaman sesuai role dengan pushReplacement agar tidak bisa kembali ke login
+                      // Pindah ke halaman sesuai role dengan pushNamedAndRemoveUntil
                       if (mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => targetScreen),
-                        );
+                        Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
                       }
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
