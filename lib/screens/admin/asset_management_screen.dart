@@ -347,37 +347,6 @@ class AssetManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDetailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.gray,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showDeleteDialog(BuildContext context, Asset asset) {
     showDialog(
       context: context,

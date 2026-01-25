@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
-import 'package:lendo/widgets/sidebar.dart';
+import '../../services/auth_service.dart';
+import '../auth/login.dart';
 
-class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+class BorrowerProfileScreen extends ConsumerWidget {
+  const BorrowerProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServicePod);
+    final currentUser = authService.getCurrentUser();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile', style: TextStyle(color: AppColors.white)),
@@ -15,31 +19,37 @@ class ProfileScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
-      drawer: const CustomSidebar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Card Section
-            _buildProfileCard(),
+            // Profile Card Section (matches admin exactly)
+            _buildProfileCard(currentUser),
             
             const SizedBox(height: AppSpacing.lg),
             
             // Personal Information Section
-            _buildPersonalInformationSection(),
+            _buildPersonalInformationSection(currentUser),
             
             const SizedBox(height: AppSpacing.lg),
             
-            // Account Settings Section
-            // _buildAccountSettingsSection(),
+            // Logout Button
+            _buildLogoutButton(context, authService),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(dynamic user) {
+    String displayName = user != null && user.userMetadata != null && user.userMetadata?['full_name'] != null 
+        ? user.userMetadata!['full_name'] 
+        : (user != null ? user.email?.split('@')[0] ?? 'User' : 'User');
+    String role = user != null && user.userMetadata != null && user.userMetadata?['role'] != null 
+        ? user.userMetadata!['role'] 
+        : 'borrower';
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.primary, // Dark green background
@@ -80,12 +90,12 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lang Natanegara',
+                  displayName,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.white,
-                    fontFamily: 'Poppins', // Modern font
+                    fontFamily: 'Poppins',
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -103,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    'admin',
+                    role,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.white,
@@ -120,7 +130,17 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalInformationSection() {
+  Widget _buildPersonalInformationSection(dynamic user) {
+    String email = user != null && user.email != null 
+        ? user.email 
+        : 'email@example.com';
+    String phone = user != null && user.phone != null && user.phone.trim().isNotEmpty
+        ? user.phone 
+        : '-';
+    String location = user != null && user.userMetadata != null && user.userMetadata?['location'] != null 
+        ? user.userMetadata!['location'] 
+        : 'Jakarta, Indonesia';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -149,7 +169,7 @@ class ProfileScreen extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.email_outlined,
                 label: 'Email',
-                value: 'lang.natanegara@example.com',
+                value: email,
               ),
               const Divider(
                 color: AppColors.outline,
@@ -159,7 +179,7 @@ class ProfileScreen extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.phone_outlined,
                 label: 'Phone',
-                value: '+62 812-3456-7890',
+                value: phone,
               ),
               const Divider(
                 color: AppColors.outline,
@@ -169,12 +189,86 @@ class ProfileScreen extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.location_on_outlined,
                 label: 'Location',
-                value: 'Jakarta, Indonesia',
+                value: location,
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context, AuthService authService) {
+    return GestureDetector(
+      onTap: () async {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.secondary,
+            title: const Text('Konfirmasi Logout', style: TextStyle(color: AppColors.white)),
+            content: const Text('Apakah Anda yakin ingin logout?', style: TextStyle(color: AppColors.white)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal', style: TextStyle(color: AppColors.gray)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Ya', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirm == true) {
+          await authService.signOut();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.red.withOpacity(0.5), // Red with 0.5 opacity
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.red,
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.white.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.logout,
+                size: 20,
+                color: AppColors.white,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
+              child: Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

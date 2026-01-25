@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/sidebar.dart';
+import 'package:lendo/widgets/themed_date_picker.dart';
 
 class LogActivityScreen extends ConsumerWidget {
   const LogActivityScreen({super.key});
@@ -41,7 +42,14 @@ class LogActivityScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: Icon(Icons.calendar_today, color: AppColors.white),
-            onPressed: () => _showDatePicker(context),
+            onPressed: () {
+              ThemedDatePicker.showThemedDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+              );
+            },
           ),
         ],
       ),
@@ -124,33 +132,6 @@ class LogActivityScreen extends ConsumerWidget {
     );
   }
   
-  void _showDatePicker(BuildContext context) {
-    showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.white,
-              surface: AppColors.secondary,
-              onSurface: AppColors.white,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-  }
-
   Widget _buildActivityItem({
     required String action,
     required String entity,

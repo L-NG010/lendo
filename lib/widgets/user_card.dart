@@ -182,46 +182,4 @@ class UserCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildStatusRow(String label, String status) {
-    Color statusColor = AppColors.gray;
-    if (status.toLowerCase() == 'active') {
-      statusColor = AppColors.primary;
-    } else if (status.toLowerCase() == 'inactive') {
-      statusColor = Colors.red;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: statusColor, width: 1),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 11,
-                color: statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
