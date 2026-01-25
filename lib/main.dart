@@ -16,6 +16,9 @@ import 'package:lendo/screens/officer/dashboard_screen.dart';
 import 'package:lendo/screens/borrower/dashboard_screen.dart';
 import 'package:lendo/screens/borrower/submission_screen.dart';
 import 'package:lendo/screens/borrower/profile_screen.dart';
+import 'package:lendo/screens/borrower/return_screen.dart';
+import 'package:lendo/screens/borrower/history_screen.dart';
+import 'package:lendo/screens/borrower/submissions_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,8 +81,10 @@ class MyApp extends ConsumerWidget {
         '/settings': (context) => const SettingsScreen(),
         // Borrower routes
         '/borrower/submission': (context) => const BorrowerSubmissionScreen(),
-        '/borrower/history': (context) => const BorrowerProfileScreen(),
+        '/borrower/submissions': (context) => const BorrowerSubmissionsScreen(),
+        '/borrower/history': (context) => const BorrowerHistoryScreen(),
         '/borrower/profile': (context) => const BorrowerProfileScreen(),
+        '/borrower/return': (context) => const BorrowerReturnScreen(),
       },
     );
   }

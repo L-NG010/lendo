@@ -6,6 +6,8 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/bottom_navigation.dart';
 import 'profile_screen.dart';
 import 'submission_screen.dart';
+import 'history_screen.dart';
+import 'submissions_screen.dart';
 
 class BorrowerDashboardScreen extends ConsumerStatefulWidget {
   const BorrowerDashboardScreen({super.key});
@@ -184,24 +186,24 @@ class _DashboardContent extends ConsumerWidget {
             mainAxisSpacing: AppSpacing.sm,
             children: [
               _buildActionButton(
-                icon: Icons.search,
-                label: 'Browse Assets',
+                icon: Icons.list_alt,
+                label: 'My Submissions',
                 onTap: () {
-                  Navigator.pushNamed(context, '/borrower/assets');
+                  Navigator.pushNamed(context, '/borrower/submissions');
                 },
               ),
               _buildActionButton(
                 icon: Icons.history,
-                label: 'My History',
+                label: 'History',
                 onTap: () {
                   Navigator.pushNamed(context, '/borrower/history');
                 },
               ),
               _buildActionButton(
-                icon: Icons.account_circle,
-                label: 'Profile',
+                icon: Icons.undo,
+                label: 'Return Items',
                 onTap: () {
-                  Navigator.pushNamed(context, '/borrower/profile');
+                  Navigator.pushNamed(context, '/borrower/return');
                 },
               ),
             ],
