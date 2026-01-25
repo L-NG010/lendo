@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/submission_cart.dart';
-import 'package:lendo/widgets/themed_date_picker.dart';
 
 class BorrowerSubmissionScreen extends ConsumerStatefulWidget {
   const BorrowerSubmissionScreen({super.key});

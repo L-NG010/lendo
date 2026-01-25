@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/auth_service.dart';
-import '../auth/login.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/bottom_navigation.dart';
 import 'profile_screen.dart';
 import 'submission_screen.dart';
-import 'history_screen.dart';
-import 'submissions_screen.dart';
 
 class BorrowerDashboardScreen extends ConsumerStatefulWidget {
   const BorrowerDashboardScreen({super.key});
