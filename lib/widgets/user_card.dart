@@ -4,14 +4,14 @@ import 'package:lendo/models/user_model.dart';
 
 class UserCard extends StatelessWidget {
   final UserModel user;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const UserCard({
     super.key,
     required this.user,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -43,7 +43,7 @@ class UserCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
-                        _getUserIcon(user.role),
+                        _getUserIcon(user.rawUserMetadata['role'] ?? 'borrower'),
                         color: AppColors.primary,
                         size: 20,
                       ),
@@ -54,7 +54,7 @@ class UserCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user.name,
+                            user.rawUserMetadata['name'] ?? user.email,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -76,18 +76,24 @@ class UserCard extends StatelessWidget {
               ),
               Row(
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
-                    onPressed: onEdit,
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints.tight(Size(32, 32)),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete, color: AppColors.red, size: 18),
-                    onPressed: onDelete,
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints.tight(Size(32, 32)),
-                  ),
+                  if (onEdit != null)
+                    IconButton(
+                      icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
+                      onPressed: onEdit,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints.tight(Size(32, 32)),
+                    ),
+                  if (onDelete != null)
+                    IconButton(
+                      icon: Icon(
+                        (user.rawUserMetadata['is_active'] ?? true) ? Icons.delete : Icons.check_circle,
+                        color: (user.rawUserMetadata['is_active'] ?? true) ? AppColors.red : Colors.green,
+                        size: 18,
+                      ),
+                      onPressed: onDelete,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints.tight(Size(32, 32)),
+                    ),
                 ],
               ),
             ],
@@ -96,10 +102,10 @@ class UserCard extends StatelessWidget {
           Row(
             children: [
               Expanded(child: _buildDetailRow('Email:', user.email)),
-              Expanded(child: _buildDetailRow('Phone:', user.phoneNumber)),
+              Expanded(child: _buildDetailRow('Phone:', user.phone?.isNotEmpty == true ? user.phone! : '-')),
             ],
           ),
-          _buildRoleRow('Role:', user.role),
+          _buildRoleRow('Role:', user.rawUserMetadata['role'] ?? 'borrower'),
         ],
       ),
     );

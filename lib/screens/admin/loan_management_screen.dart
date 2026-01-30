@@ -4,59 +4,38 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
 import 'package:lendo/widgets/loan_card.dart';
+import 'package:lendo/providers/loan_provider.dart';
 
 class LoanManagementScreen extends ConsumerWidget {
   const LoanManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Sample loan data based on your INSERT statement
-    final loans = [
-      LoanModel(
-        id: '14',
-        userId: 'c691fc60-2e5d-46d4-af6d-e2e9594048e6',
-        status: 'pending',
-        dueDate: '2026-01-20',
-        returnedAt: '2026-01-22',
-        lateDays: '2',
-        createdAt: '2026-01-18 13:50:47.726446+00',
-        loanDate: '2026-01-19',
-        reason: null,
-      ),
-      LoanModel(
-        id: '15',
-        userId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        status: 'approved',
-        dueDate: '2026-01-25',
-        returnedAt: null,
-        lateDays: null,
-        createdAt: '2026-01-20 09:30:15.123456+00',
-        loanDate: '2026-01-21',
-        reason: 'Project presentation',
-      ),
-      LoanModel(
-        id: '16',
-        userId: 'f7g8h9i0-j1k2-3456-lmno-pq7890123456',
-        status: 'returned',
-        dueDate: '2026-01-15',
-        returnedAt: '2026-01-14',
-        lateDays: '0',
-        createdAt: '2026-01-10 14:22:33.456789+00',
-        loanDate: '2026-01-11',
-        reason: 'Team meeting',
-      ),
-      LoanModel(
-        id: '17',
-        userId: 'b2c3d4e5-f6g7-8901-hijk-lm9012345678',
-        status: 'rejected',
-        dueDate: '2026-01-30',
-        returnedAt: null,
-        lateDays: null,
-        createdAt: '2026-01-22 11:45:22.789012+00',
-        loanDate: '2026-01-23',
-        reason: 'Insufficient budget',
-      ),
-    ];
+    // Watch for all loans (async) and filtered loans (sync)
+    final allLoansAsync = ref.watch(loansProvider);
+    final filteredLoans = ref.watch(filteredLoansProvider);
+    final filterState = ref.watch(loanFilterProvider);
+    
+    // Listen for filter changes
+    ref.listen<LoanFilterState>(
+      loanFilterProvider,
+      (previous, next) {
+        if (previous?.searchQuery != next.searchQuery) {
+          if (next.searchQuery.isNotEmpty) {
+            // Debounce search to improve performance
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (next.searchQuery != filterState.searchQuery) return;
+              ref.read(loansProvider.notifier).searchLoans(next.searchQuery);
+            });
+          } else {
+            // If search is cleared, go back to filtered view
+            ref.read(loansProvider.notifier).filterByStatus(next.selectedStatus);
+          }
+        } else if (previous?.selectedStatus != next.selectedStatus) {
+          ref.read(loansProvider.notifier).filterByStatus(next.selectedStatus);
+        }
+      },
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -68,7 +47,7 @@ class LoanManagementScreen extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.add, color: AppColors.white, size: 28),
             onPressed: () {
-              _showAddLoanDialog(context);
+              _showAddLoanDialog(context, ref);
             },
           ),
         ],
@@ -100,6 +79,9 @@ class LoanManagementScreen extends ConsumerWidget {
                         border: InputBorder.none,
                         icon: Icon(Icons.search, color: AppColors.gray),
                       ),
+                      onChanged: (value) {
+                        ref.read(loanFilterProvider.notifier).setSearchQuery(value);
+                      },
                     ),
                   ),
                 ),
@@ -112,19 +94,26 @@ class LoanManagementScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.outline),
                     ),
-                    child: DropdownButton<String>(
-                      value: 'All',
-                      underline: Container(),
-                      isExpanded: true,
-                      hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
-                      items: ['All', 'pending', 'approved', 'returned', 'rejected'].map((String status) {
-                        return DropdownMenuItem(
-                          value: status,
-                          child: Text(status, style: TextStyle(color: AppColors.white, fontSize: 12)),
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final filterState = ref.watch(loanFilterProvider);
+                        return DropdownButton<String>(
+                          value: filterState.selectedStatus,
+                          underline: Container(),
+                          isExpanded: true,
+                          hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                          items: ['All', 'pending', 'approved', 'returned', 'rejected'].map((String status) {
+                            return DropdownMenuItem(
+                              value: status,
+                              child: Text(status, style: TextStyle(color: AppColors.white, fontSize: 12)),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              ref.read(loanFilterProvider.notifier).setSelectedStatus(newValue);
+                            }
+                          },
                         );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        // Handle status change
                       },
                     ),
                   ),
@@ -132,20 +121,67 @@ class LoanManagementScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
+            // Search results counter
+            if (filterState.searchQuery.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Text(
+                  '${filteredLoans.length} loan${filteredLoans.length != 1 ? 's' : ''} found',
+                  style: const TextStyle(
+                    color: AppColors.gray,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             Expanded(
-              child: ListView.builder(
-                itemCount: loans.length,
-                itemBuilder: (context, index) {
-                  final loan = loans[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: LoanCard(
-                      loan: loan,
-                      onEdit: () => _showUpdateDialog(context, loan),
-                      onDelete: () => _showDeleteDialog(context, loan),
-                    ),
+              child: allLoansAsync.when(
+                data: (_) {
+                  // Use filtered loans for display
+                  if (filteredLoans.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No loans found',
+                        style: TextStyle(color: AppColors.gray),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: filteredLoans.length,
+                    itemBuilder: (context, index) {
+                      final loan = filteredLoans[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: LoanCard(
+                          loan: loan,
+                          onExpand: () {},
+                          onEdit: () => _showUpdateDialog(context, ref, loan),
+                          onDelete: () => _showDeleteDialog(context, ref, loan),
+                          onLoadDetails: (loanId) => ref.read(loanServiceProvider).getLoanDetails(loanId),
+                        ),
+                      );
+                    },
                   );
                 },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Error loading loans: ${error.toString()}',
+                        style: TextStyle(color: AppColors.red),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          ref.refresh(loansProvider);
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -154,7 +190,13 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddLoanDialog(BuildContext context) {
+  void _showAddLoanDialog(BuildContext context, WidgetRef ref) {
+    final userIdController = TextEditingController();
+    final statusController = TextEditingController(text: 'pending');
+    final dueDateController = TextEditingController();
+    final loanDateController = TextEditingController();
+    final reasonController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -166,15 +208,17 @@ class LoanManagementScreen extends ConsumerWidget {
           ),
           content: Container(
             width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildAddField('User ID:', ''),
-                _buildAddField('Status:', ''),
-                _buildAddField('Due Date:', ''),
-                _buildAddField('Loan Date:', ''),
-                _buildAddField('Reason:', ''),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAddField('User ID:', userIdController),
+                  _buildAddField('Status:', statusController),
+                  _buildAddField('Due Date (YYYY-MM-DD):', dueDateController),
+                  _buildAddField('Loan Date (YYYY-MM-DD):', loanDateController),
+                  _buildAddField('Reason:', reasonController),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -188,9 +232,20 @@ class LoanManagementScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showSuccessMessage(context, 'Loan added successfully');
+              onPressed: () async {
+                try {
+                  await ref.read(loansProvider.notifier).addLoan(
+                        userId: userIdController.text,
+                        status: statusController.text,
+                        dueDate: dueDateController.text,
+                        loanDate: loanDateController.text,
+                        reason: reasonController.text.isEmpty ? null : reasonController.text,
+                      );
+                  Navigator.of(context).pop();
+                  _showSuccessMessage(context, 'Loan added successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to add loan: ${e.toString()}');
+                }
               },
               child: Text(
                 'Save',
@@ -203,7 +258,7 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddField(String label, String value) {
+  Widget _buildAddField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -229,7 +284,7 @@ class LoanManagementScreen extends ConsumerWidget {
               ),
             ),
             child: TextFormField(
-              initialValue: value.isEmpty ? '' : value,
+              controller: controller,
               decoration: InputDecoration(
                 hintText: 'Enter ${label.toLowerCase()}',
                 hintStyle: TextStyle(color: AppColors.gray),
@@ -243,7 +298,13 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showUpdateDialog(BuildContext context, LoanModel loan) {
+  void _showUpdateDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
+    final userIdController = TextEditingController(text: loan.userId);
+    final statusController = TextEditingController(text: loan.status);
+    final dueDateController = TextEditingController(text: _formatDate(loan.dueDate));
+    final loanDateController = TextEditingController(text: _formatDate(loan.loanDate));
+    final reasonController = TextEditingController(text: loan.reason ?? '');
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -255,15 +316,17 @@ class LoanManagementScreen extends ConsumerWidget {
           ),
           content: Container(
             width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildAddField('User ID:', loan.userId),
-                _buildAddField('Status:', loan.status),
-                _buildAddField('Due Date:', _formatDate(loan.dueDate)),
-                _buildAddField('Loan Date:', _formatDate(loan.loanDate)),
-                _buildAddField('Reason:', loan.reason ?? ''),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAddField('User ID:', userIdController),
+                  _buildAddField('Status:', statusController),
+                  _buildAddField('Due Date (YYYY-MM-DD):', dueDateController),
+                  _buildAddField('Loan Date (YYYY-MM-DD):', loanDateController),
+                  _buildAddField('Reason:', reasonController),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -277,8 +340,21 @@ class LoanManagementScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
+              onPressed: () async {
+                try {
+                  await ref.read(loansProvider.notifier).updateLoan(
+                        id: loan.id,
+                        userId: userIdController.text,
+                        status: statusController.text,
+                        dueDate: dueDateController.text,
+                        loanDate: loanDateController.text,
+                        reason: reasonController.text.isEmpty ? null : reasonController.text,
+                      );
+                  Navigator.of(context).pop();
+                  _showSuccessMessage(context, 'Loan updated successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to update loan: ${e.toString()}');
+                }
               },
               child: Text(
                 'Save',
@@ -291,7 +367,7 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, LoanModel loan) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -316,10 +392,14 @@ class LoanManagementScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                // Perform delete action
-                Navigator.of(context).pop(); // Close dialog
-                _showSuccessMessage(context, 'Loan #${loan.id} deleted successfully');
+              onPressed: () async {
+                try {
+                  await ref.read(loansProvider.notifier).deleteLoan(loan.id);
+                  Navigator.of(context).pop(); // Close dialog
+                  _showSuccessMessage(context, 'Loan #${loan.id} deleted successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to delete loan: ${e.toString()}');
+                }
               },
               child: Text(
                 'Delete',
@@ -332,12 +412,253 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
+  void _showLoanDetailsDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
+    // Load loan details
+    ref.read(loanServiceProvider).getLoanDetails(loan.id).then((loanDetails) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: AppColors.secondary,
+            title: Text(
+              'Loan #${loan.id} Details',
+              style: TextStyle(color: AppColors.white),
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (loanDetails.isNotEmpty)
+                    DataTable(
+                      headingTextStyle: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+                      dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) {
+                        return AppColors.background;
+                      }),
+                      dataTextStyle: const TextStyle(color: AppColors.white),
+                      dividerThickness: 1,
+                      columns: const [
+                        DataColumn(label: Text('Asset ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Condition Borrow', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Condition Return', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                      rows: loanDetails.map((detail) {
+                        return DataRow(cells: [
+                          DataCell(Text(detail.assetId)),
+                          DataCell(Text(detail.condBorrow)),
+                          DataCell(Text(detail.condReturn ?? 'N/A')),
+                          DataCell(Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                onPressed: () {
+                                  Navigator.of(context).pop(); // Close current dialog
+                                  _showEditLoanDetailDialog(context, ref, loan, detail);
+                                },
+                                tooltip: 'Edit',
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, size: 16, color: AppColors.red),
+                                onPressed: () async {
+                                  try {
+                                    await ref.read(loansProvider.notifier).deleteLoanDetails(
+                                      loanId: loan.id,
+                                      assetId: detail.assetId,
+                                    );
+                                    Navigator.of(context).pop(); // Close current dialog
+                                    _showLoanDetailsDialog(context, ref, loan); // Reopen to refresh
+                                    _showSuccessMessage(context, 'Loan detail deleted successfully');
+                                  } catch (e) {
+                                    _showErrorMessage(context, 'Failed to delete loan detail: ${e.toString()}');
+                                  }
+                                },
+                                tooltip: 'Delete',
+                              ),
+                            ],
+                          )),
+                        ]);
+                      }).toList(),
+                    )
+                  else
+                    const Text('No details available', style: TextStyle(color: AppColors.gray)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // We'll add add functionality later
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Add Detail'),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Close',
+                  style: TextStyle(color: AppColors.primary),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }).catchError((error) {
+      _showErrorMessage(context, 'Failed to load loan details: ${error.toString()}');
+    });
+  }
+
   void _showSuccessMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: AppColors.primary,
       ),
+    );
+  }
+
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.red,
+      ),
+    );
+  }
+
+  void _showAddLoanDetailDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
+    final assetIdController = TextEditingController();
+    final condBorrowController = TextEditingController(text: 'good');
+    final condReturnController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.secondary,
+          title: Text(
+            'Add Loan Detail',
+            style: TextStyle(color: AppColors.white),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAddField('Asset ID:', assetIdController),
+                  _buildAddField('Condition Borrow:', condBorrowController),
+                  _buildAddField('Condition Return:', condReturnController),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await ref.read(loansProvider.notifier).createLoanDetails(
+                    loanId: loan.id,
+                    assetId: assetIdController.text,
+                    condBorrow: condBorrowController.text,
+                    condReturn: condReturnController.text.isEmpty ? null : condReturnController.text,
+                  );
+                  Navigator.of(context).pop(); // Close add dialog
+                  _showLoanDetailsDialog(context, ref, loan); // Reopen details to refresh
+                  _showSuccessMessage(context, 'Loan detail added successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to add loan detail: ${e.toString()}');
+                }
+              },
+              child: Text(
+                'Save',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditLoanDetailDialog(BuildContext context, WidgetRef ref, LoanModel loan, LoanDetailModel detail) {
+    final assetIdController = TextEditingController(text: detail.assetId);
+    final condBorrowController = TextEditingController(text: detail.condBorrow);
+    final condReturnController = TextEditingController(text: detail.condReturn ?? '');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.secondary,
+          title: Text(
+            'Edit Loan Detail',
+            style: TextStyle(color: AppColors.white),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAddField('Asset ID:', assetIdController),
+                  _buildAddField('Condition Borrow:', condBorrowController),
+                  _buildAddField('Condition Return:', condReturnController),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await ref.read(loansProvider.notifier).addLoanDetails(
+                    loanId: loan.id,
+                    assetId: assetIdController.text,
+                    condBorrow: condBorrowController.text,
+                    condReturn: condReturnController.text.isEmpty ? null : condReturnController.text,
+                  );
+                  Navigator.of(context).pop(); // Close edit dialog
+                  _showLoanDetailsDialog(context, ref, loan); // Reopen details to refresh
+                  _showSuccessMessage(context, 'Loan detail updated successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to update loan detail: ${e.toString()}');
+                }
+              },
+              child: Text(
+                'Save',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -37,38 +37,43 @@ class AssetCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(
-                        _getAssetIcon(asset.category),
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
+                      child: asset.pictureUrl != null && asset.pictureUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.network(
+                                asset.pictureUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback to icon if image fails to load
+                                  return Icon(
+                                    _getAssetIcon(asset.category.toString()),
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  );
+                                },
+                              ),
+                            )
+                          : Icon(
+                              _getAssetIcon(asset.category.toString()),
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            asset.name,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.white,
-                            ),
-                          ),
-                          Text(
-                            'ID: ${asset.id}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.gray,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        asset.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -101,7 +106,7 @@ class AssetCard extends StatelessWidget {
           ),
           Row(
             children: [
-              Expanded(child: _buildDetailRow('Category:', asset.category)),
+              Expanded(child: _buildDetailRow('Category:', asset.category.toString())),
               if (asset.price != null) Expanded(child: _buildDetailRow('Price:', 'Rp ${asset.price}')),
             ],
           ),
@@ -163,7 +168,7 @@ class AssetCard extends StatelessWidget {
       statusColor = AppColors.primary;
     } else if (status.toLowerCase() == 'borrowed') {
       statusColor = AppColors.outline;
-    } else if (status.toLowerCase() == 'maintenance') {
+    } else if   (status.toLowerCase() == 'maintenance') {
       statusColor = Colors.orange;
     }
 

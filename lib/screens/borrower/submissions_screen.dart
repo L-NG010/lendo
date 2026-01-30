@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/expandable_card.dart';
 
-class BorrowerSubmissionsScreen extends StatefulWidget {
-  const BorrowerSubmissionsScreen({super.key});
+class BorrowerOwnSubmissionsScreen extends StatefulWidget {
+  const BorrowerOwnSubmissionsScreen({super.key});
 
   @override
-  State<BorrowerSubmissionsScreen> createState() => _BorrowerSubmissionsScreenState();
+  State<BorrowerOwnSubmissionsScreen> createState() => _BorrowerOwnSubmissionsScreenState();
 }
 
-class _BorrowerSubmissionsScreenState extends State<BorrowerSubmissionsScreen> {
+class _BorrowerOwnSubmissionsScreenState extends State<BorrowerOwnSubmissionsScreen> {
   // Mock data for pending submissions based on the provided structure
   final List<Map<String, dynamic>> _pendingSubmissions = [
     {

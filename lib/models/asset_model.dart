@@ -1,11 +1,11 @@
 class Asset {
   final String id;
   final String name;
-  final String category;
+  final int category;
   final String code;
   final String status;
   final String? pictureUrl;
-  final String? price;
+  final num? price;
 
   Asset({
     required this.id,
@@ -20,13 +20,13 @@ class Asset {
   // Factory method to create from JSON
   factory Asset.fromJson(Map<String, dynamic> json) {
     return Asset(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
-      category: json['category'] ?? '',
+      category: json['category'] is int ? json['category'] : int.tryParse(json['category']?.toString() ?? '0') ?? 0,
       code: json['code'] ?? '',
       status: json['status'] ?? '',
       pictureUrl: json['picture_url'],
-      price: json['price'].toString(),
+      price: json['price'] is num ? json['price'] : num.tryParse(json['price']?.toString() ?? ''),
     );
   }
 

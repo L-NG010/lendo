@@ -3,25 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/penalty_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
+import 'package:lendo/providers/penalty_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final penaltyRule = PenaltyRule(
-      id: '1',
-      rules: PenaltyRules(
-        damage: DamageRules(
-          lost: 100,
-          major: 20,
-          minor: 8,
-          moderate: 15,
-        ),
-        latePerDay: 5000,
-      ),
-    );
-
+    final penaltyRulesAsync = ref.watch(penaltyRulesProvider);
+      
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(color: AppColors.white)),
@@ -36,7 +26,49 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Penalty Cards Grid
-            _buildPenaltyCardsGrid(penaltyRule, context),
+            Expanded(
+              child: penaltyRulesAsync.when(
+                data: (rules) {
+                  if (rules.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.warning_amber_outlined, size: 48, color: AppColors.gray),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No penalty rules configured',
+                            style: TextStyle(color: AppColors.gray),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              _showAddPenaltyRuleDialog(context, ref);
+                            },
+                            child: Text('Add Rule'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return _buildPenaltyCardsGrid(rules.first, context, ref);
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: AppColors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading penalty rules: $error',
+                        style: const TextStyle(color: AppColors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -45,7 +77,13 @@ class SettingsScreen extends ConsumerWidget {
 
 
 
-  Widget _buildPenaltyCardsGrid(PenaltyRule rule, BuildContext context) {
+  Widget _buildPenaltyCardsGrid(PenaltyRule rule, BuildContext context, WidgetRef ref) {
+    final latePerDayController = TextEditingController(text: rule.rules.latePerDay.toString());
+    final minorController = TextEditingController(text: rule.rules.damage.minor.toString());
+    final moderateController = TextEditingController(text: rule.rules.damage.moderate.toString());
+    final majorController = TextEditingController(text: rule.rules.damage.major.toString());
+    final lostController = TextEditingController(text: rule.rules.damage.lost.toString());
+    
     return Expanded(
       child: SingleChildScrollView(
         child: Column(
@@ -61,7 +99,10 @@ class SettingsScreen extends ConsumerWidget {
                   value: rule.rules.damage.lost.toString(),
                   color: AppColors.secondary.withOpacity(0.15),
                   iconColor: AppColors.primary,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    // Controller is already linked to the text field
+                  },
+                  controller: lostController,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _buildPenaltyInputCard(
@@ -70,7 +111,10 @@ class SettingsScreen extends ConsumerWidget {
                   value: rule.rules.damage.major.toString(),
                   color: AppColors.secondary.withOpacity(0.15),
                   iconColor: AppColors.primary,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    // Controller is already linked to the text field
+                  },
+                  controller: majorController,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _buildPenaltyInputCard(
@@ -79,7 +123,10 @@ class SettingsScreen extends ConsumerWidget {
                   value: rule.rules.damage.moderate.toString(),
                   color: AppColors.secondary.withOpacity(0.15),
                   iconColor: AppColors.primary,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    // Controller is already linked to the text field
+                  },
+                  controller: moderateController,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _buildPenaltyInputCard(
@@ -88,7 +135,10 @@ class SettingsScreen extends ConsumerWidget {
                   value: rule.rules.damage.minor.toString(),
                   color: AppColors.secondary.withOpacity(0.15),
                   iconColor: AppColors.primary,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    // Controller is already linked to the text field
+                  },
+                  controller: minorController,
                 ),
               ],
             ),
@@ -107,7 +157,10 @@ class SettingsScreen extends ConsumerWidget {
                   suffixText: 'Rp',
                   color: AppColors.secondary.withOpacity(0.15),
                   iconColor: AppColors.primary,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    // Controller is already linked to the text field
+                  },
+                  controller: latePerDayController,
                 ),
               ],
             ),
@@ -115,7 +168,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
             
             // Save Button
-            _buildSaveButton(context),
+            _buildSaveButton(context, ref, rule.id, latePerDayController, minorController, moderateController, majorController, lostController),
           ],
         ),
       ),
@@ -178,6 +231,7 @@ class SettingsScreen extends ConsumerWidget {
     required Color iconColor,
     required Function(String) onChanged,
     String? suffixText,
+    TextEditingController? controller,
   }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
@@ -214,9 +268,9 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 TextField(
-                  controller: TextEditingController(text: value),
-                  onChanged: onChanged,
+                  controller: controller ?? TextEditingController(text: value),
                   keyboardType: TextInputType.number,
+                  onChanged: onChanged,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.white,
@@ -268,17 +322,40 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSaveButton(BuildContext context) {
+  Widget _buildSaveButton(BuildContext context, WidgetRef ref, String ruleId, TextEditingController latePerDayController, TextEditingController minorController, TextEditingController moderateController, TextEditingController majorController, TextEditingController lostController) {
     return Container(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Penalty settings saved successfully'),
-              backgroundColor: AppColors.primary,
-            ),
-          );
+        onPressed: () async {
+          try {
+            final damageRules = DamageRules(
+              lost: int.tryParse(lostController.text) ?? 100,
+              major: int.tryParse(majorController.text) ?? 20,
+              minor: int.tryParse(minorController.text) ?? 8,
+              moderate: int.tryParse(moderateController.text) ?? 15,
+            );
+            
+            final penaltyRules = PenaltyRules(
+              damage: damageRules,
+              latePerDay: int.tryParse(latePerDayController.text) ?? 5000,
+            );
+            
+            await ref.read(penaltyRulesProvider.notifier).updatePenaltyRule(ruleId, penaltyRules);
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Penalty settings saved successfully'),
+                backgroundColor: AppColors.primary,
+              ),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to save penalty settings: $e'),
+                backgroundColor: AppColors.red,
+              ),
+            );
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -298,6 +375,151 @@ class SettingsScreen extends ConsumerWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
+      ),
+    );
+  }
+  
+  void _showAddPenaltyRuleDialog(BuildContext context, WidgetRef ref) {
+    final latePerDayController = TextEditingController(text: '5000');
+    final minorController = TextEditingController(text: '8');
+    final moderateController = TextEditingController(text: '15');
+    final majorController = TextEditingController(text: '20');
+    final lostController = TextEditingController(text: '100');
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.secondary,
+          title: Text(
+            'Add Penalty Rule',
+            style: TextStyle(color: AppColors.white),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildInputField('Late Fee Per Day (Rp):', latePerDayController),
+                _buildInputField('Minor Damage (%):', minorController),
+                _buildInputField('Moderate Damage (%):', moderateController),
+                _buildInputField('Major Damage (%):', majorController),
+                _buildInputField('Lost Damage (%):', lostController),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (latePerDayController.text.isEmpty || 
+                    minorController.text.isEmpty ||
+                    moderateController.text.isEmpty ||
+                    majorController.text.isEmpty ||
+                    lostController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please fill all fields'),
+                      backgroundColor: AppColors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                try {
+                  final damageRules = DamageRules(
+                    lost: int.tryParse(lostController.text) ?? 100,
+                    major: int.tryParse(majorController.text) ?? 20,
+                    minor: int.tryParse(minorController.text) ?? 8,
+                    moderate: int.tryParse(moderateController.text) ?? 15,
+                  );
+                  
+                  final penaltyRules = PenaltyRules(
+                    damage: damageRules,
+                    latePerDay: int.tryParse(latePerDayController.text) ?? 5000,
+                  );
+                  
+                  await ref.read(penaltyRulesProvider.notifier).addPenaltyRule(penaltyRules);
+                  _showSuccessMessage(context, 'Penalty rule added successfully');
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to add penalty rule: $e');
+                }
+              },
+              child: Text(
+                'Save',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  Widget _buildInputField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: AppColors.outline,
+                width: 1,
+              ),
+            ),
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: AppColors.white),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Enter value',
+                hintStyle: TextStyle(color: AppColors.gray),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showSuccessMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+  
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.red,
       ),
     );
   }

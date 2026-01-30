@@ -185,7 +185,7 @@ class _DashboardContent extends ConsumerWidget {
                 icon: Icons.list_alt,
                 label: 'My Submissions',
                 onTap: () {
-                  Navigator.pushNamed(context, '/borrower/submissions');
+                  Navigator.pushNamed(context, '/borrower/own-submissions');
                 },
               ),
               _buildActionButton(

@@ -8,6 +8,7 @@ class LoanModel {
   final String createdAt;
   final String loanDate;
   final String? reason;
+  final String? userEmail;
 
   LoanModel({
     required this.id,
@@ -19,20 +20,22 @@ class LoanModel {
     required this.createdAt,
     required this.loanDate,
     this.reason,
+    this.userEmail,
   });
 
   // Factory method to create from JSON
   factory LoanModel.fromJson(Map<String, dynamic> json) {
     return LoanModel(
-      id: json['id'] ?? '',
-      userId: json['user_id'] ?? '',
-      status: json['status'] ?? '',
-      dueDate: json['due_date'] ?? '',
-      returnedAt: json['returned_at'],
-      lateDays: json['late_days'],
-      createdAt: json['created_at'] ?? '',
-      loanDate: json['loan_date'] ?? '',
-      reason: json['reason'],
+      id: (json['id'] ?? '').toString(),
+      userId: (json['user_id'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      dueDate: (json['due_date'] ?? '').toString(),
+      returnedAt: json['returned_at']?.toString(),
+      lateDays: json['late_days']?.toString(),
+      createdAt: (json['created_at'] ?? '').toString(),
+      loanDate: (json['loan_date'] ?? '').toString(),
+      reason: json['reason']?.toString(),
+      userEmail: null, // We're not getting email from auth.users anymore
     );
   }
 
@@ -70,11 +73,11 @@ class LoanDetailModel {
   // Factory method to create from JSON
   factory LoanDetailModel.fromJson(Map<String, dynamic> json) {
     return LoanDetailModel(
-      id: json['id'] ?? '',
-      loanId: json['loan_id'] ?? '',
-      assetId: json['asset_id'] ?? '',
-      condBorrow: json['cond_borrow'] ?? '',
-      condReturn: json['cond_return'],
+      id: (json['id'] ?? '').toString(),
+      loanId: (json['loan_id'] ?? '').toString(),
+      assetId: (json['asset_id'] ?? '').toString(),
+      condBorrow: (json['cond_borrow'] ?? '').toString(),
+      condReturn: json['cond_return']?.toString(),
     );
   }
 

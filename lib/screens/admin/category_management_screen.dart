@@ -4,36 +4,15 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/category_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
 import 'package:lendo/widgets/category_card.dart';
+import 'package:lendo/providers/category_provider.dart';
 
 class CategoryManagementScreen extends ConsumerWidget {
   const CategoryManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Sample category data based on your INSERT statement
-    final categories = [
-      CategoryModel(
-        id: '1',
-        name: 'Printing & Scanning',
-      ),
-      CategoryModel(
-        id: '2',
-        name: 'Presentation',
-      ),
-      CategoryModel(
-        id: '3',
-        name: 'Electronics',
-      ),
-      CategoryModel(
-        id: '4',
-        name: 'Furniture',
-      ),
-      CategoryModel(
-        id: '5',
-        name: 'Office Supplies',
-      ),
-    ];
-
+    final categoriesAsync = ref.watch(categoriesProvider);
+      
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories', style: TextStyle(color: AppColors.white)),
@@ -44,7 +23,7 @@ class CategoryManagementScreen extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.add, color: AppColors.white, size: 28),
             onPressed: () {
-              _showAddCategoryDialog(context);
+              _showAddCategoryDialog(context, ref);
             },
           ),
         ],
@@ -56,16 +35,34 @@ class CategoryManagementScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  return CategoryCard(
-                    category: category,
-                    onEdit: () => _showUpdateDialog(context, category),
-                    onDelete: () => _showDeleteDialog(context, category),
+              child: categoriesAsync.when(
+                data: (categories) {
+                  return ListView.builder(
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return CategoryCard(
+                        category: category,
+                        onEdit: () => _showUpdateDialog(context, category, ref),
+                        onDelete: () => _showDeleteDialog(context, category, ref),
+                      );
+                    },
                   );
                 },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: AppColors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading categories: $error',
+                        style: const TextStyle(color: AppColors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -74,7 +71,9 @@ class CategoryManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddCategoryDialog(BuildContext context) {
+  void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -90,61 +89,23 @@ class CategoryManagementScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: AppColors.outline,
                       width: 1,
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.category,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'New Category',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Enter category name',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.gray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildAddField('Category Name:', ''),
-                    ],
+                  child: TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: AppColors.white),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter category name',
+                      hintStyle: TextStyle(color: AppColors.gray),
+                    ),
                   ),
                 ),
               ],
@@ -161,9 +122,25 @@ class CategoryManagementScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showSuccessMessage(context, 'Category added successfully');
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter a category name'),
+                      backgroundColor: AppColors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Don't close the dialog yet, perform the operation first
+                try {
+                  await ref.read(categoriesProvider.notifier).addCategory(nameController.text.trim());
+                  _showSuccessMessage(context, 'Category added successfully');
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to add category: $e');
+                }
               },
               child: Text(
                 'Save',
@@ -176,45 +153,9 @@ class CategoryManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: AppColors.outline,
-                width: 1,
-              ),
-            ),
-            child: Text(
-              value.isEmpty ? 'Enter $label' : value,
-              style: TextStyle(
-                fontSize: 14,
-                color: value.isEmpty ? AppColors.gray : AppColors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showUpdateDialog(BuildContext context, CategoryModel category) {
+  void _showUpdateDialog(BuildContext context, CategoryModel category, WidgetRef ref) {
+    final nameController = TextEditingController(text: category.name);
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -228,19 +169,27 @@ class CategoryManagementScreen extends ConsumerWidget {
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Category Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.outline,
+                      width: 1,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: AppColors.white),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter category name',
+                      hintStyle: TextStyle(color: AppColors.gray),
+                    ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildDetailField('ID:', category.id),
-                _buildDetailField('Name:', category.name),
               ],
             ),
           ),
@@ -250,7 +199,33 @@ class CategoryManagementScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               child: Text(
-                'Close',
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter a category name'),
+                      backgroundColor: AppColors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Don't close the dialog yet, perform the operation first
+                try {
+                  await ref.read(categoriesProvider.notifier).updateCategory(category.id, nameController.text.trim());
+                  _showSuccessMessage(context, 'Category updated successfully');
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to update category: $e');
+                }
+              },
+              child: Text(
+                'Save',
                 style: TextStyle(color: AppColors.primary),
               ),
             ),
@@ -260,38 +235,7 @@ class CategoryManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDetailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 60,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.gray,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, CategoryModel category) {
+  void _showDeleteDialog(BuildContext context, CategoryModel category, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -316,10 +260,15 @@ class CategoryManagementScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                // Perform delete action
+              onPressed: () async {
                 Navigator.of(context).pop(); // Close dialog
-                _showSuccessMessage(context, 'Category "${category.name}" deleted successfully');
+                
+                try {
+                  await ref.read(categoriesProvider.notifier).deleteCategory(category.id);
+                  _showSuccessMessage(context, 'Category "${category.name}" deleted successfully');
+                } catch (e) {
+                  _showErrorMessage(context, 'Failed to delete category: $e');
+                }
               },
               child: Text(
                 'Yes',
@@ -337,6 +286,15 @@ class CategoryManagementScreen extends ConsumerWidget {
       SnackBar(
         content: Text(message),
         backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.red,
       ),
     );
   }

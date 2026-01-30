@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/auth_service.dart';
-import '../auth/login.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/kpi_card.dart';
 import 'package:lendo/widgets/officer_sidebar.dart';
@@ -11,7 +9,6 @@ class OfficerDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authService = ref.watch(authServicePod);
     
     return Scaffold(
       drawer: const OfficerSidebar(),

@@ -304,7 +304,6 @@ class _ReturnCardState extends State<ReturnCard> {
   }
 
   void _confirmReturn() {
-    widget.onConfirmReturn(widget.loan, _returnConditions, _returnReason);
-    Navigator.of(context).pop();
+    Navigator.pop(context);
   }
 }

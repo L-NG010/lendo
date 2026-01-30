@@ -84,7 +84,7 @@ class MyApp extends ConsumerWidget {
         '/settings': (context) => const SettingsScreen(),
         // Borrower routes
         '/borrower/submission': (context) => const BorrowerSubmissionScreen(),
-        '/borrower/submissions': (context) => const BorrowerSubmissionsScreen(),
+        '/borrower/own-submissions': (context) => const BorrowerOwnSubmissionsScreen(),
         '/borrower/history': (context) => const BorrowerHistoryScreen(),
         '/borrower/profile': (context) => const BorrowerProfileScreen(),
         '/borrower/return': (context) => const BorrowerReturnScreen(),
