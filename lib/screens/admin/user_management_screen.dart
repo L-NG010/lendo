@@ -14,10 +14,13 @@ class UserManagementScreen extends ConsumerWidget {
     final usersAsync = ref.watch(usersProvider);
     final filteredUsers = ref.watch(filteredUsersProvider);
     final filterState = ref.watch(roleFilterProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Management', style: TextStyle(color: AppColors.white)),
+        title: const Text(
+          'User Management',
+          style: TextStyle(color: AppColors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.white,
@@ -42,7 +45,9 @@ class UserManagementScreen extends ConsumerWidget {
                   flex: 2,
                   child: Container(
                     margin: const EdgeInsets.only(right: AppSpacing.sm),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(8),
@@ -50,15 +55,20 @@ class UserManagementScreen extends ConsumerWidget {
                     ),
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final searchQuery = ref.watch(roleFilterProvider).searchQuery;
+                        final searchQuery = ref
+                            .watch(roleFilterProvider)
+                            .searchQuery;
                         return TextField(
                           key: ValueKey(searchQuery),
-                          controller: TextEditingController(text: searchQuery)..selection = TextSelection.fromPosition(
-                            TextPosition(offset: searchQuery.length)
-                          ),
+                          controller: TextEditingController(text: searchQuery)
+                            ..selection = TextSelection.fromPosition(
+                              TextPosition(offset: searchQuery.length),
+                            ),
                           onChanged: (value) {
                             // Improved debouncing with 800ms delay to prevent performance issues
-                            ref.read(roleFilterProvider.notifier).debouncedSetSearchQuery(value, 800);
+                            ref
+                                .read(roleFilterProvider.notifier)
+                                .debouncedSetSearchQuery(value, 800);
                           },
                           style: const TextStyle(
                             color: AppColors.white,
@@ -79,20 +89,34 @@ class UserManagementScreen extends ConsumerWidget {
                               children: [
                                 if (searchQuery.isNotEmpty)
                                   IconButton(
-                                    icon: Icon(Icons.clear, color: AppColors.gray.withOpacity(0.7), size: 20),
+                                    icon: Icon(
+                                      Icons.clear,
+                                      color: AppColors.gray.withOpacity(0.7),
+                                      size: 20,
+                                    ),
                                     onPressed: () {
-                                      ref.read(roleFilterProvider.notifier).setSearchQuery('');
+                                      ref
+                                          .read(roleFilterProvider.notifier)
+                                          .setSearchQuery('');
                                     },
                                     padding: EdgeInsets.zero,
-                                    constraints: BoxConstraints.tight(const Size(36, 36)),
+                                    constraints: BoxConstraints.tight(
+                                      const Size(36, 36),
+                                    ),
                                     tooltip: 'Clear search',
                                   ),
                                 const SizedBox(width: 4),
-                                Icon(Icons.search, color: AppColors.gray.withOpacity(0.7), size: 22),
+                                Icon(
+                                  Icons.search,
+                                  color: AppColors.gray.withOpacity(0.7),
+                                  size: 22,
+                                ),
                                 const SizedBox(width: 4),
                               ],
                             ),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                         );
                       },
@@ -102,7 +126,9 @@ class UserManagementScreen extends ConsumerWidget {
                 // Role filter dropdown
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(8),
@@ -113,16 +139,29 @@ class UserManagementScreen extends ConsumerWidget {
                         value: filterState.selectedRole,
                         underline: Container(),
                         isExpanded: true,
-                        hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
-                        items: ['All', 'admin', 'officer', 'borrower'].map((String role) {
+                        hint: Text(
+                          'Filter',
+                          style: TextStyle(color: AppColors.gray, fontSize: 12),
+                        ),
+                        items: ['All', 'admin', 'officer', 'borrower'].map((
+                          String role,
+                        ) {
                           return DropdownMenuItem(
                             value: role,
-                            child: Text(role, style: TextStyle(color: AppColors.white, fontSize: 12)),
+                            child: Text(
+                              role,
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
                           if (newValue != null) {
-                            ref.read(roleFilterProvider.notifier).setSelectedRole(newValue);
+                            ref
+                                .read(roleFilterProvider.notifier)
+                                .setSelectedRole(newValue);
                           }
                         },
                       ),
@@ -138,21 +177,23 @@ class UserManagementScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Text(
                   '${filteredUsers.length} user${filteredUsers.length != 1 ? 's' : ''} found',
-                  style: const TextStyle(
-                    color: AppColors.gray,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: AppColors.gray, fontSize: 12),
                 ),
               ),
             Expanded(
               child: usersAsync.when(
                 data: (users) {
-                  if (filteredUsers.isEmpty && filterState.searchQuery.isNotEmpty) {
+                  if (filteredUsers.isEmpty &&
+                      filterState.searchQuery.isNotEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, color: AppColors.gray, size: 48),
+                          Icon(
+                            Icons.search_off,
+                            color: AppColors.gray,
+                            size: 48,
+                          ),
                           const SizedBox(height: 16),
                           const Text(
                             'No users found',
@@ -175,7 +216,7 @@ class UserManagementScreen extends ConsumerWidget {
                       ),
                     );
                   }
-                  
+
                   return ListView.builder(
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
@@ -191,7 +232,9 @@ class UserManagementScreen extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
                 error: (error, stack) => Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -245,7 +288,10 @@ class UserManagementScreen extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Add New User', style: TextStyle(color: AppColors.white)),
+          title: const Text(
+            'Add New User',
+            style: TextStyle(color: AppColors.white),
+          ),
           backgroundColor: AppColors.secondary,
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -253,28 +299,39 @@ class UserManagementScreen extends ConsumerWidget {
               _buildAddField('Email', emailController),
               _buildAddField('Password', passwordController, isPassword: true),
               _buildAddField('Name', nameController),
-              _buildRoleDropdown('Role', selectedRole, (value) => setState(() => selectedRole = value)),
+              _buildRoleDropdown(
+                'Role',
+                selectedRole,
+                (value) => setState(() => selectedRole = value),
+              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.gray)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
-                if (emailController.text.isEmpty || passwordController.text.isEmpty || nameController.text.isEmpty) {
+                if (emailController.text.isEmpty ||
+                    passwordController.text.isEmpty ||
+                    nameController.text.isEmpty) {
                   if (context.mounted) {
                     _showErrorMessage(context, 'All fields are required');
                   }
                   return;
                 }
                 try {
-                  await ref.read(usersProvider.notifier).addUser(
-                    email: emailController.text.trim(),
-                    password: passwordController.text,
-                    role: selectedRole,
-                  );
+                  await ref
+                      .read(usersProvider.notifier)
+                      .addUser(
+                        email: emailController.text.trim(),
+                        password: passwordController.text,
+                        role: selectedRole,
+                      );
                   if (context.mounted) {
                     Navigator.pop(context);
                     ref.read(usersProvider.notifier).quickRefresh();
@@ -286,7 +343,9 @@ class UserManagementScreen extends ConsumerWidget {
                   }
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
               child: const Text('Create'),
             ),
           ],
@@ -297,37 +356,51 @@ class UserManagementScreen extends ConsumerWidget {
 
   void _showUpdateDialog(BuildContext context, UserModel user, WidgetRef ref) {
     final emailController = TextEditingController(text: user.email);
-    final nameController = TextEditingController(text: user.rawUserMetadata['name'] ?? '');
+    final nameController = TextEditingController(
+      text: user.rawUserMetadata['name'] ?? '',
+    );
     String selectedRole = user.rawUserMetadata['role'] ?? 'borrower';
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Update User', style: TextStyle(color: AppColors.white)),
+          title: const Text(
+            'Update User',
+            style: TextStyle(color: AppColors.white),
+          ),
           backgroundColor: AppColors.secondary,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildAddField('Email', emailController),
               _buildAddField('Name', nameController),
-              _buildRoleDropdown('Role', selectedRole, (value) => setState(() => selectedRole = value)),
+              _buildRoleDropdown(
+                'Role',
+                selectedRole,
+                (value) => setState(() => selectedRole = value),
+              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.gray)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.gray),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
                 try {
-                  await ref.read(usersProvider.notifier).updateUser(
-                    id: user.id,
-                    email: emailController.text.trim(),
-                    name: nameController.text.trim(),
-                    role: selectedRole,
-                  );
+                  await ref
+                      .read(usersProvider.notifier)
+                      .updateUser(
+                        id: user.id,
+                        email: emailController.text.trim(),
+                        name: nameController.text.trim(),
+                        role: selectedRole,
+                      );
                   if (context.mounted) {
                     Navigator.pop(context);
                     ref.read(usersProvider.notifier).quickRefresh();
@@ -339,7 +412,9 @@ class UserManagementScreen extends ConsumerWidget {
                   }
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
               child: const Text('Update'),
             ),
           ],
@@ -352,11 +427,14 @@ class UserManagementScreen extends ConsumerWidget {
     final isActive = user.rawUserMetadata['is_active'] ?? true;
     final action = isActive ? 'deactivate' : 'activate';
     final userName = user.rawUserMetadata['name'] ?? user.email;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${action[0].toUpperCase()}${action.substring(1)} User', style: const TextStyle(color: AppColors.white)),
+        title: Text(
+          '${action[0].toUpperCase()}${action.substring(1)} User',
+          style: const TextStyle(color: AppColors.white),
+        ),
         backgroundColor: AppColors.secondary,
         content: Text(
           'Are you sure you want to ${action} $userName?',
@@ -365,17 +443,22 @@ class UserManagementScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.gray)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.gray),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
               try {
-                await ref.read(usersProvider.notifier).updateUser(
-                  id: user.id,
-                  name: user.rawUserMetadata['name'],
-                  role: user.rawUserMetadata['role'],
-                  isActive: !isActive,
-                );
+                await ref
+                    .read(usersProvider.notifier)
+                    .updateUser(
+                      id: user.id,
+                      name: user.rawUserMetadata['name'],
+                      role: user.rawUserMetadata['role'],
+                      isActive: !isActive,
+                    );
                 if (context.mounted) {
                   Navigator.pop(context);
                   ref.read(usersProvider.notifier).quickRefresh();
@@ -387,7 +470,9 @@ class UserManagementScreen extends ConsumerWidget {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: isActive ? AppColors.red : Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isActive ? AppColors.red : Colors.green,
+            ),
             child: Text(action[0].toUpperCase() + action.substring(1)),
           ),
         ],
@@ -395,7 +480,11 @@ class UserManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddField(String label, TextEditingController controller, {bool isPassword = false}) {
+  Widget _buildAddField(
+    String label,
+    TextEditingController controller, {
+    bool isPassword = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: TextField(
@@ -416,7 +505,11 @@ class UserManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRoleDropdown(String label, String currentValue, Function(String) onChanged) {
+  Widget _buildRoleDropdown(
+    String label,
+    String currentValue,
+    Function(String) onChanged,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: DropdownButtonFormField<String>(
@@ -446,19 +539,13 @@ class UserManagementScreen extends ConsumerWidget {
 
   void _showSuccessMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.primary),
     );
   }
 
   void _showErrorMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.red),
     );
   }
 }

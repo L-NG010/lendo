@@ -16,96 +16,102 @@ class UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = user.rawUserMetadata['role'] ?? 'borrower';
+    final name = user.rawUserMetadata['name'] ?? user.email;
+    final isActive = user.rawUserMetadata['is_active'] ?? true;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.secondary,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.outline,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.outline),
       ),
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
+          // ================= LEFT USER INFO =================
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ICON
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    _getUserIcon(role),
+                    color: AppColors.primary,
+                    size: 30,
+                  ),
+                ),
+
+                const SizedBox(width: AppSpacing.sm),
+
+                // NAME + ROLE
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        _getUserIcon(user.rawUserMetadata['role'] ?? 'borrower'),
-                        color: AppColors.primary,
-                        size: 20,
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.rawUserMetadata['name'] ?? user.email,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.white,
-                            ),
-                          ),
-                          Text(
-                            'ID: ${user.id}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.gray,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.outline.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppColors.outline),
+                      ),
+                      child: Text(
+                        role,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.outline,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Row(
-                children: [
-                  if (onEdit != null)
-                    IconButton(
-                      icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
-                      onPressed: onEdit,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints.tight(Size(32, 32)),
-                    ),
-                  if (onDelete != null)
-                    IconButton(
-                      icon: Icon(
-                        (user.rawUserMetadata['is_active'] ?? true) ? Icons.delete : Icons.check_circle,
-                        color: (user.rawUserMetadata['is_active'] ?? true) ? AppColors.red : Colors.green,
-                        size: 18,
-                      ),
-                      onPressed: onDelete,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints.tight(Size(32, 32)),
-                    ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+
+          // ================= ACTION BUTTONS =================
           Row(
             children: [
-              Expanded(child: _buildDetailRow('Email:', user.email)),
-              Expanded(child: _buildDetailRow('Phone:', user.phone?.isNotEmpty == true ? user.phone! : '-')),
+              if (onEdit != null)
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  color: AppColors.primary,
+                  onPressed: onEdit,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints.tight(Size(32, 32)),
+                ),
+
+              if (onDelete != null)
+                IconButton(
+                  icon: Icon(
+                    isActive ? Icons.delete : Icons.check_circle,
+                    size: 18,
+                  ),
+                  color: isActive ? AppColors.red : Colors.green,
+                  onPressed: onDelete,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints.tight(Size(32, 32)),
+                ),
             ],
           ),
-          _buildRoleRow('Role:', user.rawUserMetadata['role'] ?? 'borrower'),
         ],
       ),
     );
@@ -122,70 +128,5 @@ class UserCard extends StatelessWidget {
       default:
         return Icons.person_outline;
     }
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoleRow(String label, String role) {
-    Color roleColor = AppColors.outline;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: roleColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: roleColor, width: 1),
-            ),
-            child: Text(
-              role,
-              style: TextStyle(
-                fontSize: 11,
-                color: roleColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
