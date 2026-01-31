@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/user_model.dart';
@@ -134,37 +135,41 @@ class UserManagementScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.outline),
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: filterState.selectedRole,
-                        underline: Container(),
-                        isExpanded: true,
-                        hint: Text(
-                          'Filter',
-                          style: TextStyle(color: AppColors.gray, fontSize: 12),
-                        ),
-                        items: ['All', 'admin', 'officer', 'borrower'].map((
-                          String role,
-                        ) {
-                          return DropdownMenuItem(
-                            value: role,
-                            child: Text(
-                              role,
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            ref
-                                .read(roleFilterProvider.notifier)
-                                .setSelectedRole(newValue);
-                          }
-                        },
+                    child: DropdownButtonFormField<String>(
+                      dropdownColor: AppColors.secondary,
+                      value: filterState.selectedRole,
+                      isExpanded: true,
+
+                      // 🔥 INI YANG MEMPERBAIKI GARIS BAWAH
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
+
+                      items: ['All', 'admin', 'officer', 'borrower'].map((
+                        role,
+                      ) {
+                        return DropdownMenuItem(
+                          value: role,
+                          child: Text(
+                            role,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          ref
+                              .read(roleFilterProvider.notifier)
+                              .setSelectedRole(newValue);
+                        }
+                      },
                     ),
                   ),
                 ),
@@ -282,6 +287,8 @@ class UserManagementScreen extends ConsumerWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+
     String selectedRole = 'borrower';
 
     showDialog(
@@ -293,12 +300,17 @@ class UserManagementScreen extends ConsumerWidget {
             style: TextStyle(color: AppColors.white),
           ),
           backgroundColor: AppColors.secondary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppColors.primary),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildAddField('Email', emailController),
               _buildAddField('Password', passwordController, isPassword: true),
               _buildAddField('Name', nameController),
+              _buildPhoneField(phoneController),
               _buildRoleDropdown(
                 'Role',
                 selectedRole,
@@ -318,35 +330,40 @@ class UserManagementScreen extends ConsumerWidget {
               onPressed: () async {
                 if (emailController.text.isEmpty ||
                     passwordController.text.isEmpty ||
-                    nameController.text.isEmpty) {
-                  if (context.mounted) {
-                    _showErrorMessage(context, 'All fields are required');
-                  }
+                    nameController.text.isEmpty ||
+                    phoneController.text.isEmpty) {
+                  _showErrorMessage(context, 'All fields are required');
                   return;
                 }
+
                 try {
                   await ref
                       .read(usersProvider.notifier)
                       .addUser(
                         email: emailController.text.trim(),
                         password: passwordController.text,
+                        name: nameController.text.trim(), // ✅ FIX
+                        phone:
+                            phoneController.text.trim(), // ✅ FIX PREFIX
                         role: selectedRole,
                       );
+
                   if (context.mounted) {
                     Navigator.pop(context);
                     ref.read(usersProvider.notifier).quickRefresh();
                     _showSuccessMessage(context, 'User created successfully');
                   }
                 } catch (e) {
-                  if (context.mounted) {
-                    _showErrorMessage(context, e.toString());
-                  }
+                  _showErrorMessage(context, e.toString());
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
-              child: const Text('Create'),
+              child: const Text(
+                'Create',
+                style: TextStyle(color: AppColors.white),
+              ),
             ),
           ],
         ),
@@ -359,6 +376,10 @@ class UserManagementScreen extends ConsumerWidget {
     final nameController = TextEditingController(
       text: user.rawUserMetadata['name'] ?? '',
     );
+    final phoneController = TextEditingController(
+      text: user.phone?.replaceFirst('+62', '') ?? '',
+    );
+
     String selectedRole = user.rawUserMetadata['role'] ?? 'borrower';
 
     showDialog(
@@ -370,11 +391,16 @@ class UserManagementScreen extends ConsumerWidget {
             style: TextStyle(color: AppColors.white),
           ),
           backgroundColor: AppColors.secondary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppColors.primary),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildAddField('Email', emailController),
               _buildAddField('Name', nameController),
+              _buildPhoneField(phoneController), // ✅ ADD PHONE
               _buildRoleDropdown(
                 'Role',
                 selectedRole,
@@ -400,22 +426,25 @@ class UserManagementScreen extends ConsumerWidget {
                         email: emailController.text.trim(),
                         name: nameController.text.trim(),
                         role: selectedRole,
+                        phone: '+62${phoneController.text.trim()}',
                       );
+
                   if (context.mounted) {
                     Navigator.pop(context);
                     ref.read(usersProvider.notifier).quickRefresh();
                     _showSuccessMessage(context, 'User updated successfully');
                   }
                 } catch (e) {
-                  if (context.mounted) {
-                    _showErrorMessage(context, e.toString());
-                  }
+                  _showErrorMessage(context, e.toString());
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
-              child: const Text('Update'),
+              child: const Text(
+                'Update',
+                style: TextStyle(color: AppColors.white),
+              ),
             ),
           ],
         ),
@@ -473,7 +502,10 @@ class UserManagementScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: isActive ? AppColors.red : Colors.green,
             ),
-            child: Text(action[0].toUpperCase() + action.substring(1)),
+            child: Text(
+              action[0].toUpperCase() + action.substring(1),
+              style: TextStyle(color: AppColors.white),
+            ),
           ),
         ],
       ),
@@ -533,6 +565,43 @@ class UserManagementScreen extends ConsumerWidget {
           );
         }).toList(),
         onChanged: (value) => onChanged(value!),
+      ),
+    );
+  }
+
+  Widget _buildPhoneField(TextEditingController controller) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.phone,
+        style: const TextStyle(color: AppColors.white),
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(12),
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            if (newValue.text.isEmpty) return newValue;
+            if (!newValue.text.startsWith('8')) return oldValue;
+            return newValue;
+          }),
+        ],
+        decoration: InputDecoration(
+          labelText: 'Phone Number',
+          labelStyle: const TextStyle(color: AppColors.gray),
+
+          prefixText: '+62 ',
+          prefixStyle: const TextStyle(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.outline),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.primary),
+          ),
+        ),
       ),
     );
   }
