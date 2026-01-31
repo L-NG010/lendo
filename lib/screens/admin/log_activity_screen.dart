@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/activity_log_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
-import 'package:lendo/widgets/themed_date_picker.dart';
 import 'package:lendo/providers/activity_log_provider.dart';
 
 class LogActivityScreen extends ConsumerWidget {

@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../services/auth_service.dart';
 import '../auth/login.dart';
 import 'package:lendo/widgets/officer_sidebar.dart';
+import '../../providers/user_provider.dart';
+import '../../models/user_model.dart';
 
 class OfficerProfileScreen extends ConsumerWidget {
   const OfficerProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserAsync = ref.watch(currentUserProvider);
     final authService = ref.watch(authServicePod);
-    final currentUser = authService.getCurrentUser();
+    final supabaseUser = authService.getCurrentUser();
 
     return Scaffold(
       appBar: AppBar(
@@ -21,36 +26,44 @@ class OfficerProfileScreen extends ConsumerWidget {
         foregroundColor: AppColors.white,
       ),
       drawer: const OfficerSidebar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Card Section
-            _buildProfileCard(currentUser),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Personal Information Section
-            _buildPersonalInformationSection(currentUser),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Logout Button
-            _buildLogoutButton(context, authService),
-          ],
-        ),
+      body: currentUserAsync.when(
+        data: (user) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile Card Section
+                _buildProfileCard(user, supabaseUser),
+                
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Personal Information Section
+                _buildPersonalInformationSection(user),
+                
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Logout Button
+                _buildLogoutButton(context, authService),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error loading profile: \$error')),
       ),
     );
   }
 
-  Widget _buildProfileCard(dynamic user) {
-    String displayName = user != null && user.userMetadata != null && user.userMetadata?['full_name'] != null 
-        ? user.userMetadata!['full_name'] 
-        : (user != null ? user.email?.split('@')[0] ?? 'Officer' : 'Officer');
-    String role = user != null && user.userMetadata != null && user.userMetadata?['role'] != null 
-        ? user.userMetadata!['role'] 
-        : 'officer';
+  Widget _buildProfileCard(UserModel? user, dynamic supabaseUser) {
+    String displayName = user != null && user.rawUserMetadata['name'] != null 
+        ? user.rawUserMetadata['name'] 
+        : (supabaseUser != null ? supabaseUser.email?.split('@')[0] ?? 'Officer' : 'Officer');
+    String role = user != null && user.rawUserMetadata['role'] != null 
+        ? user.rawUserMetadata['role'] 
+        : (supabaseUser != null && supabaseUser.userMetadata != null && supabaseUser.userMetadata?['role'] != null 
+            ? supabaseUser.userMetadata!['role'] 
+            : 'officer');
 
     return Container(
       decoration: BoxDecoration(
@@ -132,16 +145,13 @@ class OfficerProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalInformationSection(dynamic user) {
+  Widget _buildPersonalInformationSection(UserModel? user) {
     String email = user != null && user.email != null 
         ? user.email 
         : 'officer@example.com';
-    String phone = user != null && user.phone != null && user.phone.trim().isNotEmpty
-        ? user.phone 
-        : '+62 812-3456-7890';
-    String location = user != null && user.userMetadata != null && user.userMetadata?['location'] != null 
-        ? user.userMetadata!['location'] 
-        : 'Jakarta, Indonesia';
+    String phone = user != null && user.phone != null && user.phone!.isNotEmpty
+        ? user.phone!
+        : '-';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,16 +193,7 @@ class OfficerProfileScreen extends ConsumerWidget {
                 label: 'Phone',
                 value: phone,
               ),
-              const Divider(
-                color: AppColors.outline,
-                height: 30,
-                thickness: 0.5,
-              ),
-              _buildInfoRow(
-                icon: Icons.location_on_outlined,
-                label: 'Location',
-                value: location,
-              ),
+              // Removed Location field as requested
             ],
           ),
         ),

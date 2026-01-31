@@ -169,7 +169,9 @@ class AssetCard extends StatelessWidget {
     } else if (status.toLowerCase() == 'borrowed') {
       statusColor = AppColors.outline;
     } else if   (status.toLowerCase() == 'maintenance') {
-      statusColor = Colors.orange;
+      statusColor = AppColors.red;
+    } else if (status.toLowerCase() == 'booking') {
+      statusColor = AppColors.gray;
     }
 
     return Padding(

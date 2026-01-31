@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/sidebar.dart';
+import 'package:lendo/providers/user_provider.dart';
+import 'package:lendo/services/auth_service.dart';
+import 'package:lendo/models/user_model.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserAsync = ref.watch(currentUserProvider);
+    final authService = ref.watch(authServicePod);
+    final supabaseUser = authService.getCurrentUser();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile', style: TextStyle(color: AppColors.white)),
@@ -16,30 +23,45 @@ class ProfileScreen extends ConsumerWidget {
         foregroundColor: AppColors.white,
       ),
       drawer: const CustomSidebar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Card Section
-            _buildProfileCard(),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Personal Information Section
-            _buildPersonalInformationSection(),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Account Settings Section
-            // _buildAccountSettingsSection(),
-          ],
-        ),
+      body: currentUserAsync.when(
+        data: (user) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile Card Section
+                _buildProfileCard(user, supabaseUser),
+                
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Personal Information Section
+                _buildPersonalInformationSection(user),
+                
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Account Settings Section
+                // _buildAccountSettingsSection(),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error loading profile: \$error')),
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(UserModel? user, dynamic supabaseUser) {
+    String displayName = user != null && user.rawUserMetadata['name'] != null 
+        ? user.rawUserMetadata['name'] 
+        : (supabaseUser != null ? supabaseUser.email?.split('@')[0] ?? 'User' : 'User');
+    String role = user != null && user.rawUserMetadata['role'] != null 
+        ? user.rawUserMetadata['role'] 
+        : (supabaseUser != null && supabaseUser.userMetadata != null && supabaseUser.userMetadata?['role'] != null 
+            ? supabaseUser.userMetadata!['role'] 
+            : 'admin');
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.primary, // Dark green background
@@ -80,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lang Natanegara',
+                  displayName,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -103,7 +125,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    'admin',
+                    role,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.white,
@@ -120,7 +142,14 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalInformationSection() {
+  Widget _buildPersonalInformationSection(UserModel? user) {
+    String email = user != null && user.email != null 
+        ? user.email 
+        : 'email@example.com';
+    String phone = user != null && user.phone != null && user.phone!.isNotEmpty
+        ? user.phone!
+        : '-';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -149,7 +178,7 @@ class ProfileScreen extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.email_outlined,
                 label: 'Email',
-                value: 'lang.natanegara@example.com',
+                value: email,
               ),
               const Divider(
                 color: AppColors.outline,
@@ -159,18 +188,9 @@ class ProfileScreen extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.phone_outlined,
                 label: 'Phone',
-                value: '+62 812-3456-7890',
+                value: phone,
               ),
-              const Divider(
-                color: AppColors.outline,
-                height: 30,
-                thickness: 0.5,
-              ),
-              _buildInfoRow(
-                icon: Icons.location_on_outlined,
-                label: 'Location',
-                value: 'Jakarta, Indonesia',
-              ),
+              // Removed Location field as requested
             ],
           ),
         ),

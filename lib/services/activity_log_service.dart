@@ -80,4 +80,22 @@ class ActivityLogService {
       throw Exception('Failed to fetch activity logs: $e');
     }
   }
+
+  // Get latest 5 activity logs
+  Future<List<ActivityLog>> getLatestActivityLogs({int limit = 5}) async {
+    try {
+      final response = await _supabase
+          .from('activity_logs')
+          .select('*')
+          .order('created_at', ascending: false)
+          .limit(limit);
+      
+      return response.map((data) {
+        final log = data as Map<String, dynamic>;
+        return ActivityLog.fromJson(log);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch latest activity logs: $e');
+    }
+  }
 }

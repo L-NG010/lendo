@@ -312,46 +312,6 @@ class AssetManagementScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: AppColors.outline,
-                width: 1,
-              ),
-            ),
-            child: TextFormField(
-              initialValue: value.isEmpty ? '' : value,
-              decoration: InputDecoration(
-                hintText: 'Enter ' + label.toLowerCase(),
-                hintStyle: TextStyle(color: AppColors.gray),
-                border: InputBorder.none,
-              ),
-              style: TextStyle(color: AppColors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
   Widget _buildTextField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -578,19 +538,6 @@ class AssetManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _saveNewAsset(BuildContext context, WidgetRef ref) {
-    // This method will be implemented in the dialog itself
-    // For now, show a placeholder message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Please fill the form and click Save'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-  }
-
-  // _updateAsset method is no longer needed as logic is handled directly in the dialog
-
   void _deleteAsset(BuildContext context, WidgetRef ref, Asset asset) async {
     try {
       final assetsNotifier = ref.read(assetsProvider.notifier);
@@ -614,14 +561,5 @@ class AssetManagementScreen extends ConsumerWidget {
         );
       }
     }
-  }
-
-  void _showSuccessMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-      ),
-    );
   }
 }

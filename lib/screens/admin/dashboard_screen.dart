@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/widgets/kpi_card.dart';
 import 'package:lendo/widgets/quick_action.dart';
-import 'package:lendo/widgets/recent_activity.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../widgets/sidebar.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../models/activity_log_model.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardKpiAsync = ref.watch(dashboardKpiProvider);
+    final recentActivityLogsAsync = ref.watch(recentActivityLogsProvider);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard', style: TextStyle(color: AppColors.white)),
@@ -25,48 +29,63 @@ class AdminDashboardScreen extends ConsumerWidget {
           children: [
             const SizedBox(height: AppSpacing.md),
 
-            Row(
-              children: [
-                Expanded(
-                  child: KpiCard(
-                    title: 'Assets',
-                    value: '247',
-                    icon: const Icon(Icons.inventory),
-                    iconColor: AppColors.white,
-                  ),
+            dashboardKpiAsync.when(
+              data: (kpiData) {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: KpiCard(
+                            title: 'Assets',
+                            value: kpiData['total_assets']?.toString() ?? '0',
+                            icon: const Icon(Icons.inventory),
+                            iconColor: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: KpiCard(
+                            title: 'Users',
+                            value: kpiData['total_users']?.toString() ?? '0',
+                            icon: const Icon(Icons.people),
+                            iconColor: AppColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: KpiCard(
+                            title: 'Loans',
+                            value: kpiData['total_loans']?.toString() ?? '0',
+                            icon: const Icon(Icons.receipt_long),
+                            iconColor: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: KpiCard(
+                            title: 'Categories',
+                            value: kpiData['total_categories']?.toString() ?? '0',
+                            icon: const Icon(Icons.category),
+                            iconColor: AppColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(
+                child: Text(
+                  'Error loading KPI data: $error',
+                  style: const TextStyle(color: AppColors.white),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: KpiCard(
-                    title: 'Users',
-                    value: '128',
-                    icon: const Icon(Icons.people),
-                    iconColor: AppColors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: KpiCard(
-                    title: 'Loans',
-                    value: '104',
-                    icon: const Icon(Icons.receipt_long),
-                    iconColor: AppColors.white,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: KpiCard(
-                    title: 'Categories',
-                    value: '24',
-                    icon: const Icon(Icons.category),
-                    iconColor: AppColors.white,
-                  ),
-                ),
-              ],
+              ),
             ),
 
             const SizedBox(height: AppSpacing.lg),
@@ -121,7 +140,67 @@ class AdminDashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
 
             _sectionContainer(
-              child: const RecentActivity(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionHeader(title: 'Recent Activity'),
+                  const SizedBox(height: AppSpacing.md),
+                  recentActivityLogsAsync.when(
+                    data: (logs) {
+                      if (logs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No recent activity',
+                            style: TextStyle(color: AppColors.gray),
+                          ),
+                        );
+                      }
+                      
+                      return Column(
+                        children: List.generate(logs.length, (index) {
+                          final log = logs[index];
+                          return Column(
+                            children: [
+                              _buildActivityItem(log),
+                              if (index < logs.length - 1)
+                                const Divider(color: AppColors.outline),
+                            ],
+                          );
+                        }),
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => Center(
+                      child: Text(
+                        'Error loading activity logs: $error',
+                        style: const TextStyle(color: AppColors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/log-activities');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        minimumSize: const Size(0, 30),
+                      ),
+                      child: const Text(
+                        'View More',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: AppSpacing.lg),
@@ -157,5 +236,51 @@ class AdminDashboardScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  static Widget _buildActivityItem(ActivityLog log) {
+    String description = _generateDescription(log);
+    Color color = _getActionColor(log.action);
+    
+    return Row(
+      children: [
+        Icon(Icons.circle, size: 8, color: color),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            description,
+            style: const TextStyle(color: AppColors.gray, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _generateDescription(ActivityLog log) {
+    String entityName = log.entity;
+    
+    switch(log.action.toLowerCase()) {
+      case 'create':
+        return 'Added a new $entityName with ID ${log.entityId}';
+      case 'update':
+        return 'Updated $entityName ID ${log.entityId}';
+      case 'delete':
+        return 'Deleted $entityName with ID ${log.entityId}';
+      default:
+        return '${log.action} operation on $entityName ID ${log.entityId}';
+    }
+  }
+
+  static Color _getActionColor(String action) {
+    switch(action.toLowerCase()) {
+      case 'create':
+        return AppColors.primary;
+      case 'update':
+        return AppColors.white;
+      case 'delete':
+        return AppColors.red;
+      default:
+        return AppColors.gray;
+    }
   }
 }

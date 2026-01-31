@@ -85,38 +85,50 @@ class LoanManagementScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Status filter dropdown
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.outline),
-                    ),
-                    child: Consumer(
-                      builder: (context, ref, child) {
-                        final filterState = ref.watch(loanFilterProvider);
-                        return DropdownButton<String>(
-                          value: filterState.selectedStatus,
-                          underline: Container(),
-                          isExpanded: true,
-                          hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
-                          items: ['All', 'pending', 'approved', 'returned', 'rejected'].map((String status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(status, style: TextStyle(color: AppColors.white, fontSize: 12)),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              ref.read(loanFilterProvider.notifier).setSelectedStatus(newValue);
-                            }
-                          },
-                        );
+                // Status filter popup menu (smooth like log activity page)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final filterState = ref.watch(loanFilterProvider);
+                    return PopupMenuButton<String>(
+                      icon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.filter_list, color: AppColors.white, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            filterState.selectedStatus == 'All' ? 'All Status' : filterState.selectedStatus,
+                            style: const TextStyle(color: AppColors.white, fontSize: 12),
+                          ),
+                          Icon(Icons.arrow_drop_down, color: AppColors.white, size: 20),
+                        ],
+                      ),
+                      onSelected: (String result) {
+                        ref.read(loanFilterProvider.notifier).setSelectedStatus(result);
                       },
-                    ),
-                  ),
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'All',
+                          child: Text('All Status', style: TextStyle(color: AppColors.white)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'pending',
+                          child: Text('Pending', style: TextStyle(color: AppColors.white)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'approved',
+                          child: Text('Approved', style: TextStyle(color: AppColors.white)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'returned',
+                          child: Text('Returned', style: TextStyle(color: AppColors.white)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'rejected',
+                          child: Text('Rejected', style: TextStyle(color: AppColors.white)),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -531,70 +543,6 @@ class LoanManagementScreen extends ConsumerWidget {
         content: Text(message),
         backgroundColor: AppColors.red,
       ),
-    );
-  }
-
-  void _showAddLoanDetailDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
-    final assetIdController = TextEditingController();
-    final condBorrowController = TextEditingController(text: 'good');
-    final condReturnController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppColors.secondary,
-          title: Text(
-            'Add Loan Detail',
-            style: TextStyle(color: AppColors.white),
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildAddField('Asset ID:', assetIdController),
-                  _buildAddField('Condition Borrow:', condBorrowController),
-                  _buildAddField('Condition Return:', condReturnController),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.gray),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await ref.read(loansProvider.notifier).createLoanDetails(
-                    loanId: loan.id,
-                    assetId: assetIdController.text,
-                    condBorrow: condBorrowController.text,
-                    condReturn: condReturnController.text.isEmpty ? null : condReturnController.text,
-                  );
-                  Navigator.of(context).pop(); // Close add dialog
-                  _showLoanDetailsDialog(context, ref, loan); // Reopen details to refresh
-                  _showSuccessMessage(context, 'Loan detail added successfully');
-                } catch (e) {
-                  _showErrorMessage(context, 'Failed to add loan detail: ${e.toString()}');
-                }
-              },
-              child: Text(
-                'Save',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 

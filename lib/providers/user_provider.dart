@@ -107,6 +107,29 @@ class UsersNotifier extends AsyncNotifier<List<UserModel>> {
   }
 }
 
+// Current user provider
+final currentUserProvider = FutureProvider<UserModel?>((ref) async {
+  final authService = ref.watch(authServicePod);
+  final supabaseUser = authService.getCurrentUser();
+  
+  if (supabaseUser == null) return null;
+  
+  // Fetch the full user data from the database using the user ID
+  final userService = ref.watch(userServiceProvider);
+  final allUsers = await userService.getAllUsers();
+  
+  // Find the current user in the list
+  return allUsers.firstWhere(
+    (user) => user.id == supabaseUser.id,
+    orElse: () => UserModel(
+      id: supabaseUser.id,
+      email: supabaseUser.email ?? '',
+      phone: supabaseUser.phone,
+      rawUserMetadata: supabaseUser.userMetadata ?? {},
+    ),
+  );
+});
+
 // Provider for users list
 final usersProvider =
     AsyncNotifierProvider.autoDispose<UsersNotifier, List<UserModel>>(
@@ -173,7 +196,7 @@ final filteredUsersProvider = Provider<List<UserModel>>((ref) {
       // Exclude current logged-in admin
       if (currentUser != null) {
         filtered = filtered.where((user) => user.id != currentUser.id).toList();
-      }
+      } 
 
       // Filter by role
       if (filterState.selectedRole != 'All') {
