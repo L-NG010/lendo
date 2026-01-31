@@ -36,52 +36,55 @@ class UsersNotifier extends AsyncNotifier<List<UserModel>> {
     required String email,
     required String password,
     required String role,
+    required String name,
+    required String phone,
   }) async {
     try {
       final userService = ref.read(userServiceProvider);
+
       final newUser = await userService.createUser(
         email: email,
         password: password,
         role: role,
-        name: email.split('@')[0], // Use email prefix as default name
+        name: name, // ✅ DO NOT OVERRIDE
+        phone: phone,
       );
-      
-      // Update state with new user - immediate UI update
+
       state = await AsyncValue.guard(() async {
         final currentUsers = state.value ?? [];
         return [newUser, ...currentUsers];
       });
     } catch (e) {
-      // Error handling can be improved
       rethrow;
     }
   }
 
-  // Update existing user
+  // ✅ UPDATE USER (ADD PHONE SUPPORT)
   Future<void> updateUser({
     required String id,
     String? email,
     String? name,
     String? role,
+    String? phone,
     bool? isActive,
   }) async {
     try {
       final userService = ref.read(userServiceProvider);
+
       final updatedUser = await userService.updateUser(
         id: id,
         email: email,
         name: name,
         role: role,
+        phone: phone,
         isActive: isActive,
       );
-      
-      // Update state with updated user - immediate UI update
+
       state = await AsyncValue.guard(() async {
         final currentUsers = state.value ?? [];
-        return currentUsers.map((user) => user.id == id ? updatedUser : user).toList();
+        return currentUsers.map((u) => u.id == id ? updatedUser : u).toList();
       });
     } catch (e) {
-      // Error handling can be improved
       rethrow;
     }
   }
@@ -91,7 +94,7 @@ class UsersNotifier extends AsyncNotifier<List<UserModel>> {
     try {
       final userService = ref.read(userServiceProvider);
       await userService.deleteUser(id);
-      
+
       // Remove user from state - immediate UI update
       state = await AsyncValue.guard(() async {
         final currentUsers = state.value ?? [];
@@ -105,22 +108,19 @@ class UsersNotifier extends AsyncNotifier<List<UserModel>> {
 }
 
 // Provider for users list
-final usersProvider = AsyncNotifierProvider.autoDispose<UsersNotifier, List<UserModel>>(UsersNotifier.new);
+final usersProvider =
+    AsyncNotifierProvider.autoDispose<UsersNotifier, List<UserModel>>(
+      UsersNotifier.new,
+    );
 
 // Selected role filter
 class RoleFilterState {
   final String selectedRole;
   final String searchQuery;
 
-  RoleFilterState({
-    this.selectedRole = 'All',
-    this.searchQuery = '',
-  });
+  RoleFilterState({this.selectedRole = 'All', this.searchQuery = ''});
 
-  RoleFilterState copyWith({
-    String? selectedRole,
-    String? searchQuery,
-  }) {
+  RoleFilterState copyWith({String? selectedRole, String? searchQuery}) {
     return RoleFilterState(
       selectedRole: selectedRole ?? this.selectedRole,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -130,7 +130,7 @@ class RoleFilterState {
 
 class RoleFilterNotifier extends Notifier<RoleFilterState> {
   Timer? _debounceTimer;
-  
+
   @override
   RoleFilterState build() {
     return RoleFilterState();
@@ -143,11 +143,11 @@ class RoleFilterNotifier extends Notifier<RoleFilterState> {
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
   }
-  
+
   void debouncedSetSearchQuery(String query, int milliseconds) {
     // Cancel previous timer if exists
     _debounceTimer?.cancel();
-    
+
     // Set up new timer
     _debounceTimer = Timer(Duration(milliseconds: milliseconds), () {
       state = state.copyWith(searchQuery: query);
@@ -155,7 +155,10 @@ class RoleFilterNotifier extends Notifier<RoleFilterState> {
   }
 }
 
-final roleFilterProvider = NotifierProvider<RoleFilterNotifier, RoleFilterState>(RoleFilterNotifier.new);
+final roleFilterProvider =
+    NotifierProvider<RoleFilterNotifier, RoleFilterState>(
+      RoleFilterNotifier.new,
+    );
 
 final filteredUsersProvider = Provider<List<UserModel>>((ref) {
   final usersAsync = ref.watch(usersProvider);
@@ -169,28 +172,28 @@ final filteredUsersProvider = Provider<List<UserModel>>((ref) {
 
       // Exclude current logged-in admin
       if (currentUser != null) {
-        filtered = filtered.where(
-          (user) => user.id != currentUser.id
-        ).toList();
+        filtered = filtered.where((user) => user.id != currentUser.id).toList();
       }
 
       // Filter by role
       if (filterState.selectedRole != 'All') {
-        filtered = filtered.where(
-          (user) => user.rawUserMetadata['role'] == filterState.selectedRole
-        ).toList();
+        filtered = filtered
+            .where(
+              (user) =>
+                  user.rawUserMetadata['role'] == filterState.selectedRole,
+            )
+            .toList();
       }
 
       // Filter by search query (name and email)
       if (filterState.searchQuery.isNotEmpty) {
         final query = filterState.searchQuery.toLowerCase().trim();
-        filtered = filtered.where(
-          (user) {
-            final name = (user.rawUserMetadata['name'] as String? ?? '').toLowerCase();
-            final email = user.email.toLowerCase();
-            return name.contains(query) || email.contains(query);
-          }
-        ).toList();
+        filtered = filtered.where((user) {
+          final name = (user.rawUserMetadata['name'] as String? ?? '')
+              .toLowerCase();
+          final email = user.email.toLowerCase();
+          return name.contains(query) || email.contains(query);
+        }).toList();
       }
 
       return filtered;

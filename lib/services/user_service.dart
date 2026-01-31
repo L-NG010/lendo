@@ -4,65 +4,82 @@ import 'package:lendo/models/user_model.dart';
 import 'package:lendo/config/supabase_config.dart';
 
 class UserService {
+  final String _baseUrl =
+      '${SupabaseConfig.supabaseUrl}/functions/v1/manage-users';
 
-  final String _baseUrl = '${SupabaseConfig.supabaseUrl}/functions/v1/manage-users';
   final Map<String, String> _headers = {
-    'Authorization': 'Bearer ${SupabaseConfig.supabaseAnonKey}', // Ganti dengan SERVICE_ROLE_KEY jika perlu
+    'Authorization': 'Bearer ${SupabaseConfig.supabaseAnonKey}',
     'apikey': SupabaseConfig.supabaseAnonKey,
     'Content-Type': 'application/json',
   };
 
-  /// GET: Ambil semua user (aktif & nonaktif)
+  /// FORMAT PHONE +62
+  String formatPhone(String phone) {
+    phone = phone.trim();
+
+    if (phone.startsWith('0')) {
+      return '+62${phone.substring(1)}';
+    }
+    if (phone.startsWith('8')) {
+      return '+62$phone';
+    }
+    if (!phone.startsWith('+62')) {
+      return '+62$phone';
+    }
+    return phone;
+  }
+
+  /// GET USERS
   Future<List<UserModel>> getAllUsers() async {
-    final response = await http.get(
-      Uri.parse(_baseUrl),
-      headers: _headers,
-    ).timeout(const Duration(seconds: 15));
+    final response = await http.get(Uri.parse(_baseUrl), headers: _headers);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final users = data['users'] as List;
-      return users.map((user) => UserModel.fromJson(user)).toList();
+      return users.map((u) => UserModel.fromJson(u)).toList();
     } else {
-      throw Exception('Failed to fetch users: ${response.statusCode} ${response.body}');
+      throw Exception('Fetch users failed: ${response.body}');
     }
   }
 
-  /// POST: Create user baru
+  /// CREATE USER
   Future<UserModel> createUser({
     required String email,
     required String password,
     required String role,
     required String name,
+    required String phone,
   }) async {
     final body = json.encode({
       'email': email,
       'password': password,
       'role': role,
       'name': name,
+      'phone': formatPhone(phone),
     });
 
     final response = await http.post(
       Uri.parse(_baseUrl),
       headers: _headers,
       body: body,
-    ).timeout(const Duration(seconds: 15));
+    );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return UserModel.fromJson(data['user']);
     } else {
-      throw Exception('Failed to create user: ${response.statusCode} ${response.body}');
+      throw Exception('Create user failed: ${response.body}');
     }
   }
 
-  /// PUT: Update user
+  /// UPDATE USER
   Future<UserModel> updateUser({
     required String id,
     String? email,
     String? password,
     String? role,
     String? name,
+    String? phone,
     bool? isActive,
   }) async {
     final body = json.encode({
@@ -71,6 +88,7 @@ class UserService {
       'password': password,
       'role': role,
       'name': name,
+      'phone': phone != null ? formatPhone(phone) : null,
       'is_active': isActive,
     });
 
@@ -78,17 +96,17 @@ class UserService {
       Uri.parse(_baseUrl),
       headers: _headers,
       body: body,
-    ).timeout(const Duration(seconds: 15));
+    );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return UserModel.fromJson(data['user']);
     } else {
-      throw Exception('Failed to update user: ${response.statusCode} ${response.body}');
+      throw Exception('Update user failed: ${response.body}');
     }
   }
 
-  /// DELETE: Soft delete (nonaktifkan user)
+  /// DELETE USER (SOFT)
   Future<void> deleteUser(String id) async {
     final body = json.encode({'id': id});
 
@@ -96,10 +114,10 @@ class UserService {
       Uri.parse(_baseUrl),
       headers: _headers,
       body: body,
-    ).timeout(const Duration(seconds: 15));
+    );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to deactivate user: ${response.statusCode} ${response.body}');
+      throw Exception('Deactivate failed: ${response.body}');
     }
   }
 }
