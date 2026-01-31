@@ -1,16 +1,27 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Header CORS
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // atau ganti domain produksi
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 serve(async (req) => {
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SERVICE_ROLE_KEY")!,
   );
 
   try {
-    // =======================
-    // READ: List semua user (aktif & nonaktif)
-    // =======================
+
+    // READ USERS
     if (req.method === "GET") {
       const { data, error } = await supabase.auth.admin.listUsers();
       if (error) throw error;
@@ -23,14 +34,12 @@ serve(async (req) => {
       }));
 
       return new Response(JSON.stringify({ users }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // =======================
-    // CREATE: Tambah user baru
-    // =======================
-    else if (req.method === "POST") {
+    // CREATE USER
+    if (req.method === "POST") {
       const body = await req.json();
       const { email, password, role, name } = body;
 
@@ -42,14 +51,12 @@ serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ user: data.user }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // =======================
-    // UPDATE: Update user
-    // =======================
-    else if (req.method === "PUT") {
+    // UPDATE USER
+    if (req.method === "PUT") {
       const body = await req.json();
       const { id, email, password, role, name, is_active } = body;
 
@@ -61,14 +68,12 @@ serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ user: data.user }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // =======================
-    // DELETE: Soft delete (nonaktifkan)
-    // =======================
-    else if (req.method === "DELETE") {
+    // DELETE USER (soft delete)
+    if (req.method === "DELETE") {
       const body = await req.json();
       const { id } = body;
 
@@ -78,22 +83,17 @@ serve(async (req) => {
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ message: `User ${id} has been deactivated` }),
-        { headers: { "Content-Type": "application/json" } },
+        JSON.stringify({ message: `User ${id} deactivated` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // =======================
-    // METHOD NOT ALLOWED
-    // =======================
-    else {
-      return new Response("Method Not Allowed", { status: 405 });
-    }
+    return new Response("Method Not Allowed", { status: 405 });
 
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message || error }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
