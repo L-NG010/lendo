@@ -307,4 +307,65 @@ class LoanService {
       throw Exception('Failed to fetch loan details: $e');
     }
   }
+
+  // Get pending loans for current user
+  Future<List<LoanModel>> getPendingLoansForUser(String userId) async {
+    try {
+      dev.log('Fetching pending loans for user ID: $userId', name: 'LoanService.getPendingLoansForUser');
+      
+      final response = await _supabase
+          .from('loans')
+          .select('*, loan_details(*, assets(name))')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .order('created_at', ascending: false);
+      
+      dev.log('Retrieved ${response.length} pending loans for user ID: $userId', name: 'LoanService.getPendingLoansForUser');
+      
+      return response.map((data) => LoanModel.fromJson(data)).toList();
+    } catch (e) {
+      dev.log('Error fetching pending loans for user ID $userId: $e', name: 'LoanService.getPendingLoansForUser', error: e);
+      throw Exception('Failed to fetch pending loans: $e');
+    }
+  }
+
+  // Get all loans for current user (pending, approved, etc.)
+  Future<List<Map<String, dynamic>>> getLoansForUserWithDetails(String userId) async {
+    try {
+      dev.log('Fetching all loans with details for user ID: $userId', name: 'LoanService.getLoansForUserWithDetails');
+      
+      final response = await _supabase
+          .from('loans')
+          .select('*, loan_details(*, assets(name))')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      
+      dev.log('Retrieved ${response.length} loans for user ID: $userId', name: 'LoanService.getLoansForUserWithDetails');
+      
+      return response as List<Map<String, dynamic>>;
+    } catch (e) {
+      dev.log('Error fetching loans for user ID $userId: $e', name: 'LoanService.getLoansForUserWithDetails', error: e);
+      throw Exception('Failed to fetch loans: $e');
+    }
+  }
+
+  // Get all loans for current user (pending, approved, etc.)
+  Future<List<LoanModel>> getLoansForUser(String userId) async {
+    try {
+      dev.log('Fetching all loans for user ID: $userId', name: 'LoanService.getLoansForUser');
+      
+      final response = await _supabase
+          .from('loans')
+          .select('*, loan_details(*, assets(name))')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      
+      dev.log('Retrieved ${response.length} loans for user ID: $userId', name: 'LoanService.getLoansForUser');
+      
+      return response.map((data) => LoanModel.fromJson(data)).toList();
+    } catch (e) {
+      dev.log('Error fetching loans for user ID $userId: $e', name: 'LoanService.getLoansForUser', error: e);
+      throw Exception('Failed to fetch loans: $e');
+    }
+  }
 }

@@ -14,12 +14,44 @@ class BorrowerDashboardScreen extends ConsumerStatefulWidget {
 
 class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScreen> {
   int _selectedIndex = 0;
+  bool _showSuccessMessage = false;
   
   final List<Widget> _screens = [
     const _DashboardContent(),
     const BorrowerSubmissionScreen(),
     const BorrowerProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if we came from a successful submission
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ModalRoute.of(context)?.settings.arguments == 'loan_success') {
+        setState(() {
+          _showSuccessMessage = true;
+        });
+        
+        // Show success snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Peminjaman berhasil diajukan!'),
+            backgroundColor: AppColors.primary,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Reset the flag after showing the message
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() {
+              _showSuccessMessage = false;
+            });
+          }
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

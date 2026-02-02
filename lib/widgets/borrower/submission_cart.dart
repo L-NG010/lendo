@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/themed_date_picker.dart';
-import 'package:lendo/providers/borrower/borrower.dart';
+import 'package:lendo/providers/borrower/asset.dart';
 import 'package:lendo/services/auth_service.dart';
 
 class SubmissionCart extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final Function(Map<String, dynamic>)? onRemoveItem;
   final Function(Map<String, dynamic>, int)? onUpdateQuantity;
+  final VoidCallback? onSubmissionSuccess;
+  final Function(String)? onShowSnackbar;
 
   const SubmissionCart({
     super.key,
     required this.cartItems,
     this.onRemoveItem,
     this.onUpdateQuantity,
+    this.onSubmissionSuccess,
+    this.onShowSnackbar,
   });
 
   @override
@@ -26,15 +31,14 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
   DateTime? returnDate;
   String reason = '';
 
-  late final authService;
-  var currentUser;
+  late final AuthService authService;
+  User? currentUser;
 
   @override
   void initState() {
     super.initState();
     authService = ref.read(authServicePod);
     currentUser = authService.getCurrentUser();
-    print('Current User ID: ${currentUser?.id}');
   }
 
   Future<void> _selectDate(BuildContext context, bool isPickup) async {
@@ -98,38 +102,92 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
         const SizedBox(height: AppSpacing.md),
         _SubmitButton(
           onPressed: () async {
-            if (currentUser == null) {
+            if (currentUser?.id == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('User belum login!')),
               );
               return;
             }
 
-            final loanService = ref.read(loanServiceProvider);
+            if (pickupDate == null || returnDate == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tanggal harus diisi!')),
+              );
+              return;
+            }
 
+            // Skip reason validation since it's optional in the function
+            // if (reason.trim().isEmpty) {
+            //   ScaffoldMessenger.of(context).showSnackBar(
+            //     const SnackBar(content: Text('Alasan harus diisi!')),
+            //   );
+            //   return;
+            // }
+
+            if (widget.cartItems.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Keranjang kosong!')),
+              );
+              return;
+            }
+
+            final loanService = ref.read(loanServiceProvider);
+            final assetService = ref.read(assetStockServiceProvider);
+
+            print('=== SUBMISSION PROCESS START ===');
+            
             try {
+              print('Step 1: Getting asset IDs from cart items...');
+              // Get actual available asset IDs
+              var assetIds = await assetService.getAssetIdsForCartItems(widget.cartItems);
+              print('Step 1 COMPLETE: Got asset IDs: $assetIds');
+              
+              print('Step 2: Booking the loan...');
+              // Book the loan
               await loanService.addLoan(
-                userId: currentUser.id,
+                userId: currentUser!.id,
                 loanDate: pickupDate!,
                 dueDate: returnDate!,
                 reason: reason,
-                assetIds:
-                    widget.cartItems.map((e) => e['id'] as int).toList(),
+                assetIds: assetIds,
               );
+              print('Step 2 COMPLETE: Loan booked successfully');
 
-              setState(() {
-                widget.cartItems.clear();
-              });
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Peminjaman berhasil!')),
-              );
-            } catch (e) {
-              ScaffoldMessenger.of(
+              // Instead of using context which might cause issues,
+              // navigate to own submissions directly
+              print('Navigating to own submissions...');
+              Navigator.pushNamedAndRemoveUntil(
                 context,
-              ).showSnackBar(
-                SnackBar(content: Text('Gagal: ${e.toString()}')),
+                '/borrower/own-submissions',
+                (route) => false,
+                arguments: 'loan_success',
               );
+              
+              // The snackbar will be shown on the new screen
+              print('Navigation completed');
+            } catch (e, stackTrace) {
+              // Print error for debugging
+              // print('Error in loan submission: $e');
+              // print('Stack trace: $stackTrace');
+              
+              if (mounted) {
+                // Show a more user-friendly error message
+                String errorMessage = e.toString();
+                if (errorMessage.contains('tidak tersedia') || errorMessage.contains('sudah dipinjam')) {
+                  errorMessage = 'Asset tidak tersedia atau sudah dipinjam. Silakan refresh halaman.';
+                } else if (errorMessage.contains('Network')) {
+                  errorMessage = 'Koneksi internet bermasalah. Silakan coba lagi.';
+                } else if (errorMessage.contains('timeout')) {
+                  errorMessage = 'Waktu koneksi habis. Silakan coba lagi.';
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal: $errorMessage'),
+                    backgroundColor: AppColors.red,
+                  ),
+                );
+              }
             }
           },
         ),

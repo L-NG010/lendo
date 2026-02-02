@@ -17,16 +17,16 @@ class _BorrowerSubmissionScreenState
   final List<Map<String, dynamic>> _cartItems = [];
   bool _isCartVisible = false;
 
-  int _getItemQuantity(int assetId) {
+  int _getItemQuantity(String assetName) {
     var item = _cartItems.firstWhere(
-      (item) => item['id'] == assetId,
+      (item) => item['name'] == assetName,
       orElse: () => {'quantity': 0},
     );
     return (item['quantity'] ?? 0) as int;
   }
 
-  bool _isItemInCart(String assetId) {
-    return _cartItems.any((item) => (item['id'] as String) == assetId);
+  bool _isItemInCart(String assetName) {
+    return _cartItems.any((item) => item['name'] == assetName);
   }
 
   int get _totalCartItems {
@@ -103,9 +103,10 @@ class _BorrowerSubmissionScreenState
                         itemCount: assetStocks.length,
                         itemBuilder: (context, index) {
                           final asset = assetStocks[index];
-                          final isInCart = _isItemInCart(asset.id.toString());
-                          final quantity = _getItemQuantity(asset.id);
-                          final isStockExhausted = quantity >= asset.total;
+                          final isInCart = _isItemInCart(asset.name);
+                          final quantity = _getItemQuantity(asset.name);
+                          final isStockExhausted = quantity >= asset.available;
+                          final isNotAvailable = asset.available <= 0;
 
                           return Container(
                             margin:
@@ -114,10 +115,12 @@ class _BorrowerSubmissionScreenState
                               color: AppColors.secondary,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isInCart
-                                    ? AppColors.primary
-                                    : AppColors.outline,
-                                width: isInCart ? 2 : 1,
+                                color: isNotAvailable
+                                    ? AppColors.red.withOpacity(0.5)
+                                    : isInCart
+                                        ? AppColors.primary
+                                        : AppColors.outline,
+                                width: isNotAvailable ? 1 : (isInCart ? 2 : 1),
                               ),
                             ),
                             child: Padding(
@@ -163,10 +166,12 @@ class _BorrowerSubmissionScreenState
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Stok: ${asset.total}',
-                                          style: const TextStyle(
+                                          isNotAvailable 
+                                            ? 'Asset tidak tersedia' 
+                                            : 'Stok: ${asset.available}',
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: AppColors.gray,
+                                            color: isNotAvailable ? AppColors.red : AppColors.gray,
                                           ),
                                         ),
                                       ],
@@ -178,19 +183,18 @@ class _BorrowerSubmissionScreenState
                                       IconButton(
                                         icon: Icon(
                                           Icons.add_shopping_cart,
-                                          color: isStockExhausted
-                                              ? AppColors.gray
-                                                  .withOpacity(0.5)
+                                          color: isNotAvailable || isStockExhausted
+                                              ? AppColors.gray.withOpacity(0.5)
                                               : AppColors.gray,
                                           size: 20,
                                         ),
-                                        onPressed: isStockExhausted
+                                        onPressed: isNotAvailable || isStockExhausted
                                             ? null
                                             : () {
                                                 setState(() {
                                                   var existingItemIndex =
                                                       _cartItems.indexWhere(
-                                                    (item) => item['id'] == asset.id,
+                                                    (item) => item['name'] == asset.name,
                                                   );
 
                                                   if (existingItemIndex != -1) {
@@ -198,17 +202,16 @@ class _BorrowerSubmissionScreenState
                                                         _cartItems[
                                                                 existingItemIndex]
                                                             ['quantity'] as int;
-                                                    if (currentQuantity < asset.total) {
+                                                    if (currentQuantity < asset.available) {
                                                       _cartItems[existingItemIndex]
                                                               ['quantity'] =
                                                           currentQuantity + 1;
                                                     }
                                                   } else {
                                                     _cartItems.add({
-                                                      'id': asset.id,
                                                       'name': asset.name,
                                                       'quantity': 1,
-                                                      'stock': asset.total,
+                                                      'stock': asset.available,
                                                     });
                                                   }
                                                 });
@@ -320,16 +323,23 @@ class _BorrowerSubmissionScreenState
                               onRemoveItem: (item) {
                                 setState(() {
                                   _cartItems.removeWhere(
-                                      (cartItem) => cartItem['id'] == item['id']);
+                                      (cartItem) => cartItem['name'] == item['name']);
                                 });
                               },
                               onUpdateQuantity: (item, newQuantity) {
                                 setState(() {
                                   final index = _cartItems.indexWhere(
-                                      (cartItem) => cartItem['id'] == item['id']);
+                                      (cartItem) => cartItem['name'] == item['name']);
                                   if (index != -1) {
                                     _cartItems[index]['quantity'] = newQuantity;
                                   }
+                                });
+                              },
+                              onSubmissionSuccess: () {
+                                // Close cart and clear items
+                                setState(() {
+                                  _isCartVisible = false;
+                                  _cartItems.clear();
                                 });
                               },
                             ),
