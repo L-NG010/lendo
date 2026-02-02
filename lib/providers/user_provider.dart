@@ -46,7 +46,7 @@ class UsersNotifier extends AsyncNotifier<List<UserModel>> {
         email: email,
         password: password,
         role: role,
-        name: name, // ✅ DO NOT OVERRIDE
+        name: name,
         phone: phone,
       );
 

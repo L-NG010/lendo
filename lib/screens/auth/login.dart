@@ -158,8 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         );
                       }
                     } else {
-// Login sukses, cek role dan arahkan ke halaman sesuai role
-                      await Future.delayed(const Duration(milliseconds: 500)); // Beri sedikit delay agar metadata user tersedia
+                      await Future.delayed(const Duration(milliseconds: 500));
                       
                       final userRole = authService.getUserRole();
                       String route;
@@ -183,8 +182,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           }
                           return;
                       }
-                      
-                      // Pindah ke halaman sesuai role dengan pushNamedAndRemoveUntil
                       if (mounted) {
                         Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
                       }

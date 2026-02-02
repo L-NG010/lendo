@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/themed_date_picker.dart';
+import 'package:lendo/providers/borrower/borrower.dart';
+import 'package:lendo/services/auth_service.dart';
 
-
-class SubmissionCart extends StatefulWidget {
+class SubmissionCart extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final Function(Map<String, dynamic>)? onRemoveItem;
   final Function(Map<String, dynamic>, int)? onUpdateQuantity;
@@ -16,13 +18,24 @@ class SubmissionCart extends StatefulWidget {
   });
 
   @override
-  State<SubmissionCart> createState() => _SubmissionCartState();
+  ConsumerState<SubmissionCart> createState() => _SubmissionCartState();
 }
 
-class _SubmissionCartState extends State<SubmissionCart> {
+class _SubmissionCartState extends ConsumerState<SubmissionCart> {
   DateTime? pickupDate;
   DateTime? returnDate;
   String reason = '';
+
+  late final authService;
+  var currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    authService = ref.read(authServicePod);
+    currentUser = authService.getCurrentUser();
+    print('Current User ID: ${currentUser?.id}');
+  }
 
   Future<void> _selectDate(BuildContext context, bool isPickup) async {
     final DateTime? picked = await ThemedDatePicker.showThemedDatePicker(
@@ -35,12 +48,10 @@ class _SubmissionCartState extends State<SubmissionCart> {
       setState(() {
         if (isPickup) {
           pickupDate = picked;
-          // Auto suggest return date as next day if not set
           if (returnDate == null || returnDate!.isBefore(picked)) {
             returnDate = picked.add(const Duration(days: 1));
           }
         } else {
-          // Ensure return date is not before pickup date
           if (pickupDate != null && picked.isBefore(pickupDate!)) {
             returnDate = pickupDate!.add(const Duration(days: 1));
           } else {
@@ -62,7 +73,6 @@ class _SubmissionCartState extends State<SubmissionCart> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Date and Reason Fields
         _DateAndReasonFields(
           pickupDate: pickupDate,
           returnDate: returnDate,
@@ -71,7 +81,6 @@ class _SubmissionCartState extends State<SubmissionCart> {
           onReasonChanged: _updateReason,
         ),
         const SizedBox(height: AppSpacing.md),
-        // Cart Items List
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -88,10 +97,41 @@ class _SubmissionCartState extends State<SubmissionCart> {
         ),
         const SizedBox(height: AppSpacing.md),
         _SubmitButton(
-          pickupDate: pickupDate,
-          returnDate: returnDate,
-          reason: reason,
-          cartItems: widget.cartItems,
+          onPressed: () async {
+            if (currentUser == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User belum login!')),
+              );
+              return;
+            }
+
+            final loanService = ref.read(loanServiceProvider);
+
+            try {
+              await loanService.addLoan(
+                userId: currentUser.id,
+                loanDate: pickupDate!,
+                dueDate: returnDate!,
+                reason: reason,
+                assetIds:
+                    widget.cartItems.map((e) => e['id'] as int).toList(),
+              );
+
+              setState(() {
+                widget.cartItems.clear();
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Peminjaman berhasil!')),
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(
+                SnackBar(content: Text('Gagal: ${e.toString()}')),
+              );
+            }
+          },
         ),
       ],
     );
@@ -122,11 +162,13 @@ class _CartItemTile extends StatelessWidget {
           Expanded(
             child: Text(
               item['name'] as String,
-              style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.white),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppColors.white,
+              ),
             ),
           ),
           const SizedBox(width: 8),
-          // Quantity controls
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -141,9 +183,15 @@ class _CartItemTile extends StatelessWidget {
                   }
                 },
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                constraints: const BoxConstraints.tightFor(
+                  width: 24,
+                  height: 24,
+                ),
               ),
-              Text('${item['quantity']}', style: TextStyle(color: AppColors.gray)),
+              Text(
+                '${item['quantity']}',
+                style: TextStyle(color: AppColors.gray),
+              ),
               IconButton(
                 icon: const Icon(Icons.add, size: 16),
                 onPressed: () {
@@ -154,7 +202,10 @@ class _CartItemTile extends StatelessWidget {
                   }
                 },
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                constraints: const BoxConstraints.tightFor(
+                  width: 24,
+                  height: 24,
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.delete, size: 16),
@@ -162,7 +213,10 @@ class _CartItemTile extends StatelessWidget {
                   onRemoveItem?.call(item);
                 },
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                constraints: const BoxConstraints.tightFor(
+                  width: 24,
+                  height: 24,
+                ),
               ),
             ],
           ),
@@ -172,37 +226,22 @@ class _CartItemTile extends StatelessWidget {
   }
 }
 
-// Submit button that will be updated when integrated with actual submission logic
-// For now, keeping the basic implementation
 class _SubmitButton extends StatelessWidget {
-  final DateTime? pickupDate;
-  final DateTime? returnDate;
-  final String reason;
-  final List<Map<String, dynamic>> cartItems;
+  final VoidCallback? onPressed;
 
-  const _SubmitButton({
-    Key? key,
-    required this.pickupDate,
-    required this.returnDate,
-    required this.reason,
-    required this.cartItems,
-  }) : super(key: key);
+  const _SubmitButton({Key? key, this.onPressed}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // This would trigger the submission with dates and reason
-          // Implementation would depend on the submission service
-        },
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           padding: EdgeInsets.all(AppSpacing.md),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+              borderRadius: BorderRadius.circular(8)),
         ),
         child: Text('Submit', style: TextStyle(color: AppColors.white)),
       ),
@@ -231,6 +270,22 @@ class _DateAndReasonFields extends StatefulWidget {
 }
 
 class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
+  late TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController(text: widget.reason);
+    _reasonController.addListener(() {
+      widget.onReasonChanged(_reasonController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -243,25 +298,19 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Pickup Date Field
           _buildDateField(
             label: 'Tanggal Pengambilan',
             date: widget.pickupDate,
             onTap: () => widget.onDateSelected(context, true),
           ),
           const SizedBox(height: 12),
-          // Return Date Field
           _buildDateField(
             label: 'Tanggal Pengembalian',
             date: widget.returnDate,
             onTap: () => widget.onDateSelected(context, false),
           ),
           const SizedBox(height: 12),
-          // Reason Field
-          Text(
-            'Alasan',
-            style: TextStyle(color: AppColors.gray, fontSize: 14),
-          ),
+          Text('Alasan', style: TextStyle(color: AppColors.gray, fontSize: 14)),
           const SizedBox(height: 4),
           TextField(
             style: TextStyle(color: AppColors.white),
@@ -284,7 +333,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
               ),
             ),
             maxLines: 3,
-            controller: TextEditingController(text: widget.reason),
+            controller: _reasonController,
           ),
         ],
       ),
@@ -299,10 +348,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: AppColors.gray, fontSize: 14),
-        ),
+        Text(label, style: TextStyle(color: AppColors.gray, fontSize: 14)),
         const SizedBox(height: 4),
         GestureDetector(
           onTap: onTap,
@@ -329,7 +375,9 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
                 suffixIcon: const Icon(Icons.calendar_today, size: 16),
               ),
               controller: TextEditingController(
-                text: date != null ? '${date.day}/${date.month}/${date.year}' : '',
+                text: date != null
+                    ? '${date.day}/${date.month}/${date.year}'
+                    : '',
               ),
             ),
           ),
