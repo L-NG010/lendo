@@ -70,13 +70,13 @@ class _SubmissionCartState extends State<SubmissionCart> {
           onDateSelected: _selectDate,
           onReasonChanged: _updateReason,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         // Cart Items List
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: widget.cartItems.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) {
             final item = widget.cartItems[index];
             return _CartItemTile(
@@ -86,7 +86,7 @@ class _SubmissionCartState extends State<SubmissionCart> {
             );
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         _SubmitButton(
           pickupDate: pickupDate,
           returnDate: returnDate,
@@ -234,7 +234,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
@@ -264,6 +264,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
           ),
           const SizedBox(height: 4),
           TextField(
+            style: TextStyle(color: AppColors.white),
             decoration: InputDecoration(
               hintText: 'Masukkan alasan peminjaman',
               hintStyle: TextStyle(color: AppColors.gray.withOpacity(0.6)),
@@ -284,9 +285,6 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
             ),
             maxLines: 3,
             controller: TextEditingController(text: widget.reason),
-            onChanged: (value) {
-              widget.onReasonChanged(value);
-            },
           ),
         ],
       ),
@@ -310,6 +308,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
           onTap: onTap,
           child: AbsorbPointer(
             child: TextField(
+              style: TextStyle(color: AppColors.white),
               decoration: InputDecoration(
                 hintText: 'Pilih tanggal',
                 hintStyle: TextStyle(color: AppColors.gray.withOpacity(0.6)),

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/user_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
-import 'package:lendo/widgets/user_card.dart';
+import 'package:lendo/widgets/admin/user_card.dart';
 import 'package:lendo/providers/user_provider.dart';
 
 class UserManagementScreen extends ConsumerWidget {
