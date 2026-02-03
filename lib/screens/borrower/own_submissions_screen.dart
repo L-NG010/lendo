@@ -41,7 +41,11 @@ class _BorrowerOwnSubmissionsScreenState
     if (currentUser == null) return [];
 
     try {
-      return await _loanService.getLoansForUserWithDetails(currentUser.id);
+      final allLoans = await _loanService.getLoansForUserWithDetails(
+        currentUser.id,
+      );
+      // Filter to only show pending loans
+      return allLoans.where((loan) => loan['status'] == 'pending').toList();
     } catch (_) {
       return [];
     }
@@ -51,10 +55,13 @@ class _BorrowerOwnSubmissionsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Submissions',
-            style: TextStyle(color: AppColors.white)),
+        title: const Text(
+          'My Submissions',
+          style: TextStyle(color: AppColors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        foregroundColor: AppColors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -111,19 +118,28 @@ class _BorrowerOwnSubmissionsScreenState
 
                   final expandedContent = <Widget>[
                     _buildDetailRow(
-                        'Submitted:', submission['created_at']?.toString()),
+                      'Submitted:',
+                      submission['created_at']?.toString(),
+                    ),
                     _buildDetailRow(
-                        'Loan Date:', submission['loan_date']?.toString()),
+                      'Loan Date:',
+                      submission['loan_date']?.toString(),
+                    ),
                     _buildDetailRow(
-                        'Due Date:', submission['due_date']?.toString()),
+                      'Due Date:',
+                      submission['due_date']?.toString(),
+                    ),
                     if (submission['reason'] != null &&
                         submission['reason'].toString().isNotEmpty)
                       _buildDetailRow('Reason:', submission['reason']),
                     const SizedBox(height: AppSpacing.sm),
-                    const Text('Assets Requested:',
-                        style: TextStyle(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w500)),
+                    const Text(
+                      'Assets Requested:',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     ...loanDetails.map((detailData) {
                       final asset = detailData['assets'];
@@ -139,13 +155,21 @@ class _BorrowerOwnSubmissionsScreenState
                         ),
                         child: Row(
                           children: [
-                            Text('• $assetName',
-                                style: const TextStyle(
-                                    color: AppColors.white, fontSize: 12)),
+                            Text(
+                              '• $assetName',
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                              ),
+                            ),
                             const Spacer(),
-                            const Text('x1',
-                                style: TextStyle(
-                                    color: AppColors.gray, fontSize: 10)),
+                            const Text(
+                              'x1',
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 10,
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -177,8 +201,10 @@ class _BorrowerOwnSubmissionsScreenState
         children: const [
           Icon(Icons.assignment_outlined, size: 64, color: AppColors.gray),
           SizedBox(height: 16),
-          Text('No Submissions',
-              style: TextStyle(fontSize: 18, color: AppColors.gray)),
+          Text(
+            'No Submissions',
+            style: TextStyle(fontSize: 18, color: AppColors.gray),
+          ),
         ],
       ),
     );
@@ -189,13 +215,16 @@ class _BorrowerOwnSubmissionsScreenState
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
         children: [
-          Text(label,
-              style: const TextStyle(color: AppColors.gray, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.gray, fontSize: 12),
+          ),
           const SizedBox(width: AppSpacing.xs),
           Flexible(
-            child: Text(value ?? '-',
-                style:
-                    const TextStyle(color: AppColors.white, fontSize: 12)),
+            child: Text(
+              value ?? '-',
+              style: const TextStyle(color: AppColors.white, fontSize: 12),
+            ),
           ),
         ],
       ),

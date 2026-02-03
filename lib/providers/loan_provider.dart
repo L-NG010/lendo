@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/services/loan_service.dart';
+import 'package:lendo/services/auth_service.dart';
 
 // Loan service provider
 final loanServiceProvider = Provider<LoanService>((ref) {
@@ -43,7 +44,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
         reason: reason,
         loanDetails: loanDetails,
       );
-      
+
       // Update state with new loan
       state.whenData((loans) {
         state = AsyncData([newLoan, ...loans]);
@@ -74,7 +75,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
         loanDate: loanDate,
         reason: reason,
       );
-      
+
       // Update state with modified loan
       state.whenData((loans) {
         final index = loans.indexWhere((loan) => loan.id == id);
@@ -94,7 +95,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
     try {
       final loanService = ref.read(loanServiceProvider);
       final updatedLoan = await loanService.markLoanReturned(id: id);
-      
+
       // Update state with modified loan
       state.whenData((loans) {
         final index = loans.indexWhere((loan) => loan.id == id);
@@ -114,7 +115,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
     try {
       final loanService = ref.read(loanServiceProvider);
       await loanService.deleteLoan(id);
-      
+
       // Remove loan from state
       state.whenData((loans) {
         state = AsyncData(loans.where((loan) => loan.id != id).toList());
@@ -139,7 +140,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
         condBorrow: condBorrow,
         condReturn: condReturn,
       );
-      
+
       // Refresh the loan details
       state.whenData((loans) {
         final index = loans.indexWhere((loan) => loan.id == loanId);
@@ -186,10 +187,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
   }) async {
     try {
       final loanService = ref.read(loanServiceProvider);
-      await loanService.deleteLoanDetails(
-        loanId: loanId,
-        assetId: assetId,
-      );
+      await loanService.deleteLoanDetails(loanId: loanId, assetId: assetId);
     } catch (e) {
       rethrow;
     }
@@ -201,7 +199,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
       refresh();
       return;
     }
-    
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final loanService = ref.read(loanServiceProvider);
@@ -215,7 +213,7 @@ class LoansNotifier extends AsyncNotifier<List<LoanModel>> {
       refresh();
       return;
     }
-    
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final loanService = ref.read(loanServiceProvider);
@@ -233,16 +231,10 @@ final loansProvider = AsyncNotifierProvider<LoansNotifier, List<LoanModel>>(() {
 class LoanFilterState {
   final String selectedStatus;
   final String searchQuery;
-  
-  LoanFilterState({
-    this.selectedStatus = 'All',
-    this.searchQuery = '',
-  });
-  
-  LoanFilterState copyWith({
-    String? selectedStatus,
-    String? searchQuery,
-  }) {
+
+  LoanFilterState({this.selectedStatus = 'All', this.searchQuery = ''});
+
+  LoanFilterState copyWith({String? selectedStatus, String? searchQuery}) {
     return LoanFilterState(
       selectedStatus: selectedStatus ?? this.selectedStatus,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -255,46 +247,75 @@ class LoanFilterNotifier extends Notifier<LoanFilterState> {
   LoanFilterState build() {
     return LoanFilterState();
   }
-  
+
   void setSelectedStatus(String status) {
     state = state.copyWith(selectedStatus: status);
   }
-  
+
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
   }
-  
+
   void reset() {
     state = LoanFilterState();
   }
 }
 
 // Filter notifier provider
-final loanFilterProvider = NotifierProvider<LoanFilterNotifier, LoanFilterState>(LoanFilterNotifier.new);
+final loanFilterProvider =
+    NotifierProvider<LoanFilterNotifier, LoanFilterState>(
+      LoanFilterNotifier.new,
+    );
 
 // Filtered loans provider
 final filteredLoansProvider = Provider<List<LoanModel>>((ref) {
   final loansAsync = ref.watch(loansProvider);
   final filterState = ref.watch(loanFilterProvider);
-  
+
   return loansAsync.when(
     data: (loans) {
       // Apply status filter
       List<LoanModel> filtered = loans;
       if (filterState.selectedStatus != 'All') {
-        filtered = loans.where((loan) => loan.status == filterState.selectedStatus).toList();
+        filtered = loans
+            .where((loan) => loan.status == filterState.selectedStatus)
+            .toList();
       }
-      
+
       // Apply search filter
       if (filterState.searchQuery.isNotEmpty) {
-        filtered = filtered.where((loan) => 
-          loan.id.toLowerCase().contains(filterState.searchQuery.toLowerCase())
-        ).toList();
+        filtered = filtered
+            .where(
+              (loan) => loan.id.toLowerCase().contains(
+                filterState.searchQuery.toLowerCase(),
+              ),
+            )
+            .toList();
       }
-      
+
       return filtered;
     },
     loading: () => [],
     error: (_, __) => [],
   );
+});
+
+// Provider for current user's approved loans
+final userApprovedLoansProvider = FutureProvider.autoDispose<List<LoanModel>>((
+  ref,
+) async {
+  final authService = ref.watch(authServicePod);
+  final user = authService.getCurrentUser();
+
+  if (user == null) return [];
+
+  final loanService = ref.watch(loanServiceProvider);
+  // Fetch all loans for the user then filter locally or use a specific service method if available
+  // Using getLoansForUser which fetches details too
+  final loans = await loanService.getLoansForUser(user.id);
+
+  // Filter for approved loans that haven't been returned yet (returned_at is null)
+  return loans
+      .where((loan) => loan.status == 'approved' && loan.returnedAt == null)
+      .toList();
 });
