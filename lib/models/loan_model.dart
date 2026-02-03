@@ -9,6 +9,8 @@ class LoanModel {
   final String loanDate;
   final String? reason;
   final String? officerReason;
+  final double? penaltyAmount;
+  final String? userName;
 
   LoanModel({
     required this.id,
@@ -21,10 +23,27 @@ class LoanModel {
     required this.loanDate,
     this.reason,
     this.officerReason,
+    this.penaltyAmount,
+    this.userName,
   });
 
   // Factory method to create from JSON
   factory LoanModel.fromJson(Map<String, dynamic> json) {
+    // Calculate total penalty amount if penalties exist
+    double? totalPenalty;
+    if (json['penalties'] != null && (json['penalties'] as List).isNotEmpty) {
+      totalPenalty = (json['penalties'] as List).fold<double>(
+        0,
+        (sum, item) => sum + (num.tryParse(item['amount'].toString()) ?? 0).toDouble(),
+      );
+    }
+    
+    // Parse user name from profiles
+    String? name;
+    if (json['profiles'] != null) {
+      name = json['profiles']['name']?.toString();
+    }
+
     return LoanModel(
       id: (json['id'] ?? '').toString(),
       userId: (json['user_id'] ?? '').toString(),
@@ -36,6 +55,8 @@ class LoanModel {
       loanDate: (json['loan_date'] ?? '').toString(),
       reason: json['reason']?.toString(),
       officerReason: json['officer_reason']?.toString(),
+      penaltyAmount: totalPenalty,
+      userName: name,
     );
   }
 

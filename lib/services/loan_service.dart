@@ -17,7 +17,7 @@ class LoanService {
 
       final response = await _supabase
           .from('loans')
-          .select('*')
+          .select('*, penalties(*), profiles(name)')
           .order('id', ascending: false);
 
       dev.log(
@@ -513,7 +513,7 @@ class LoanService {
         name: 'LoanService.getLoansForUserWithDetails',
       );
 
-      return response as List<Map<String, dynamic>>;
+      return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       dev.log(
         'Error fetching loans for user ID $userId: $e',

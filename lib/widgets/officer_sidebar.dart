@@ -22,7 +22,7 @@ class OfficerSidebar extends ConsumerWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: AppColors.outline.withOpacity(0.2),
+                    color: AppColors.outline.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -59,7 +59,7 @@ class OfficerSidebar extends ConsumerWidget {
                       ),
                       _SidebarMenuItem(
                         icon: Icons.inventory_2_outlined,
-                        label: 'Pengajuan',
+                        label: 'Requests',
                         isActive: currentRoute == '/officer/requests',
                         onTap: () {
                           Navigator.of(context).pushNamedAndRemoveUntil('/officer/requests', (route) => false);
@@ -67,10 +67,18 @@ class OfficerSidebar extends ConsumerWidget {
                       ),
                       _SidebarMenuItem(
                         icon: Icons.undo_outlined,
-                        label: 'Pengembalian',
+                        label: 'Returns',
                         isActive: currentRoute == '/officer/returns',
                         onTap: () {
                           Navigator.of(context).pushNamedAndRemoveUntil('/officer/returns', (route) => false);
+                        },
+                      ),
+                      _SidebarMenuItem(
+                        icon: Icons.history,
+                        label: 'History',
+                        isActive: currentRoute == '/officer/history',
+                        onTap: () {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/officer/history', (route) => false);
                         },
                       ),
                       _SidebarMenuItem(
@@ -93,14 +101,14 @@ class OfficerSidebar extends ConsumerWidget {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.outline.withOpacity(0.2),
+                    color: AppColors.outline.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
               ),
               child: Center(
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.logout_outlined,
                     color: AppColors.red,
                   ),
@@ -108,16 +116,16 @@ class OfficerSidebar extends ConsumerWidget {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Konfirmasi Logout'),
-                        content: const Text('Apakah Anda yakin ingin logout?'),
+                        title: const Text('Logout Confirmation'),
+                        content: const Text('Are you sure you want to logout?'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Batal'),
+                            child: const Text('Cancel'),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text('Ya'),
+                            child: const Text('Yes'),
                           ),
                         ],
                       ),
@@ -126,7 +134,9 @@ class OfficerSidebar extends ConsumerWidget {
                     if (confirm == true) {
                       final authService = ref.read(authServicePod);
                       await authService.signOut();
-                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                      if (context.mounted) {
+                        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                      }
                     }
                   },
                   tooltip: 'Logout',
@@ -158,7 +168,7 @@ class _SidebarMenuItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+        color: isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Tooltip(

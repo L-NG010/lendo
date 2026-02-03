@@ -69,7 +69,7 @@ class OfficerProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -83,10 +83,10 @@ class OfficerProfileScreen extends ConsumerWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
+              color: AppColors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(40),
               border: Border.all(
-                color: AppColors.white.withOpacity(0.3),
+                color: AppColors.white.withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
@@ -118,10 +118,10 @@ class OfficerProfileScreen extends ConsumerWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.2),
+                    color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppColors.white.withOpacity(0.3),
+                      color: AppColors.white.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -205,16 +205,16 @@ class OfficerProfileScreen extends ConsumerWidget {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.secondary,
-            title: const Text('Konfirmasi Logout', style: TextStyle(color: AppColors.white)),
-            content: const Text('Apakah Anda yakin ingin logout?', style: TextStyle(color: AppColors.white)),
+            title: const Text('Logout Confirmation', style: TextStyle(color: AppColors.white)),
+            content: const Text('Are you sure you want to logout?', style: TextStyle(color: AppColors.white)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal', style: TextStyle(color: AppColors.gray)),
+                child: const Text('Cancel', style: TextStyle(color: AppColors.gray)),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Ya', style: TextStyle(color: AppColors.primary)),
+                child: const Text('Yes', style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -222,9 +222,11 @@ class OfficerProfileScreen extends ConsumerWidget {
         
         if (confirm == true) {
           await authService.signOut();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+          if (context.mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          }
         }
       },
       child: Container(
@@ -241,10 +243,10 @@ class OfficerProfileScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.1),
+                color: AppColors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: AppColors.white.withOpacity(0.3),
+                  color: AppColors.white.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -282,10 +284,10 @@ class OfficerProfileScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),

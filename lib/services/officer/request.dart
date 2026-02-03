@@ -30,6 +30,29 @@ class OfficerRequestService {
     }
   }
 
+  Future<void> rejectReturn({required int loanId}) async {
+    try {
+      dev.log(
+        'Rejecting return for loan ID: $loanId',
+        name: 'OfficerRequestService.rejectReturn',
+      );
+
+      await _supabase.rpc('reject_return', params: {'p_loan_id': loanId});
+
+      dev.log(
+        'Successfully rejected return for loan ID: $loanId',
+        name: 'OfficerRequestService.rejectReturn',
+      );
+    } catch (e) {
+      dev.log(
+        'Error rejecting return for loan ID $loanId: $e',
+        name: 'OfficerRequestService.rejectReturn',
+        error: e,
+      );
+      throw Exception('Failed to reject return: $e');
+    }
+  }
+
   Future<void> approveLoan({required int loanId}) async {
     try {
       dev.log(
@@ -50,6 +73,29 @@ class OfficerRequestService {
         error: e,
       );
       throw Exception('Failed to approve loan: $e');
+    }
+  }
+
+  Future<void> approveReturn({required int loanId}) async {
+    try {
+      dev.log(
+        'Approving return for loan ID: $loanId',
+        name: 'OfficerRequestService.approveReturn',
+      );
+
+      await _supabase.rpc('approve_return', params: {'p_loan_id': loanId});
+
+      dev.log(
+        'Successfully approved return for loan ID: $loanId',
+        name: 'OfficerRequestService.approveReturn',
+      );
+    } catch (e) {
+      dev.log(
+        'Error approving return for loan ID $loanId: $e',
+        name: 'OfficerRequestService.approveReturn',
+        error: e,
+      );
+      throw Exception('Failed to approve return: $e');
     }
   }
 }

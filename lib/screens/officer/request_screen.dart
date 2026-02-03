@@ -16,7 +16,7 @@ class OfficerRequestScreen extends ConsumerWidget {
     return Scaffold(
       drawer: const OfficerSidebar(),
       appBar: AppBar(
-        title: const Text('Pengajuan'),
+        title: const Text('Requests'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.white,
@@ -43,7 +43,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                   if (pendingLoans.isEmpty) {
                     return const Center(
                       child: Text(
-                        'Tidak ada pengajuan pending',
+                        'No pending requests',
                         style: TextStyle(color: AppColors.gray),
                       ),
                     );
@@ -98,7 +98,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Kode: ${loan.id}',
+                    'Code: ${loan.id}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -107,7 +107,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Peminjam: ${loan.userId}', // TODO: Fetch user name
+                    'Borrower: ${loan.userName ?? loan.userId}',
                     style: const TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
                 ],
@@ -116,7 +116,7 @@ class OfficerRequestScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.outline.withOpacity(0.2),
+                color: AppColors.outline.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -187,7 +187,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Alasan: ${loan.reason ?? "-"}',
+                  'Reason: ${loan.reason ?? "-"}',
                   style: const TextStyle(
                     fontStyle: FontStyle.italic,
                     fontSize: 12,
@@ -199,7 +199,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Pinjam: ${loan.loanDate}',
+                        'Borrow: ${loan.loanDate}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.gray,
@@ -208,7 +208,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                     ),
                     Expanded(
                       child: Text(
-                        'Kembali: ${loan.dueDate}',
+                        'Return: ${loan.dueDate}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.gray,
@@ -230,7 +230,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: const Text(
-                          'Setujui',
+                          'Approve',
                           style: TextStyle(color: AppColors.white),
                         ),
                       ),
@@ -246,7 +246,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: const Text(
-                          'Tolak',
+                          'Reject',
                           style: TextStyle(color: AppColors.red),
                         ),
                       ),
@@ -276,14 +276,14 @@ class OfficerRequestScreen extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Konfirmasi Persetujuan'),
+          title: const Text('Approval Confirmation'),
           content: Text(
-            'Apakah Anda yakin ingin menyetujui pengajuan pinjaman kode ${loan.id}?',
+            'Are you sure you want to approve loan request code ${loan.id}?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
@@ -313,7 +313,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                   }
                 }
               },
-              child: const Text('Setujui'),
+              child: const Text('Approve'),
             ),
           ],
         );
@@ -331,19 +331,19 @@ class OfficerRequestScreen extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Konfirmasi Penolakan'),
+          title: const Text('Rejection Confirmation'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Apakah Anda yakin ingin menolak pengajuan pinjaman kode ${loan.id}?',
+                'Are you sure you want to reject loan request code ${loan.id}?',
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: reasonController,
                 decoration: const InputDecoration(
-                  labelText: 'Alasan Penolakan',
-                  hintText: 'Masukkan alasan (opsional)',
+                  labelText: 'Rejection Reason',
+                  hintText: 'Enter reason (optional)',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
@@ -353,7 +353,7 @@ class OfficerRequestScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
@@ -387,7 +387,7 @@ class OfficerRequestScreen extends ConsumerWidget {
                 }
               },
               child: const Text(
-                'Tolak',
+                'Reject',
                 style: TextStyle(color: AppColors.red),
               ),
             ),
@@ -402,9 +402,9 @@ class OfficerRequestScreen extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(approved ? 'Berhasil Disetujui' : 'Berhasil Ditolak'),
+          title: Text(approved ? 'Approved Successfully' : 'Rejected Successfully'),
           content: Text(
-            'Pengajuan telah ${approved ? 'disetujui' : 'ditolak'}.',
+            'Request has been ${approved ? 'approved' : 'rejected'}.',
           ),
           actions: [
             TextButton(
