@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../services/auth_service.dart';
 import '../auth/login.dart';
@@ -146,10 +144,10 @@ class OfficerProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildPersonalInformationSection(UserModel? user) {
-    String email = user != null && user.email != null 
+    String email = user != null
         ? user.email 
         : 'officer@example.com';
-    String phone = user != null && user.phone != null && user.phone!.isNotEmpty
+    String phone = user != null && user.phone!.isNotEmpty
         ? user.phone!
         : '-';
 
@@ -193,7 +191,6 @@ class OfficerProfileScreen extends ConsumerWidget {
                 label: 'Phone',
                 value: phone,
               ),
-              // Removed Location field as requested
             ],
           ),
         ),
@@ -232,7 +229,6 @@ class OfficerProfileScreen extends ConsumerWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.red.withOpacity(0.5), // Red with 0.5 opacity
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: AppColors.red,

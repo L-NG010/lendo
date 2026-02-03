@@ -143,7 +143,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildPersonalInformationSection(UserModel? user) {
-    String email = user != null && user.email != null 
+    String email = user != null
         ? user.email 
         : 'email@example.com';
     String phone = user != null && user.phone != null && user.phone!.isNotEmpty

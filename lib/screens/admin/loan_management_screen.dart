@@ -11,24 +11,20 @@ class LoanManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch for all loans (async) and filtered loans (sync)
     final allLoansAsync = ref.watch(loansProvider);
     final filteredLoans = ref.watch(filteredLoansProvider);
     final filterState = ref.watch(loanFilterProvider);
     
-    // Listen for filter changes
     ref.listen<LoanFilterState>(
       loanFilterProvider,
       (previous, next) {
         if (previous?.searchQuery != next.searchQuery) {
           if (next.searchQuery.isNotEmpty) {
-            // Debounce search to improve performance
             Future.delayed(const Duration(milliseconds: 300), () {
               if (next.searchQuery != filterState.searchQuery) return;
               ref.read(loansProvider.notifier).searchLoans(next.searchQuery);
             });
           } else {
-            // If search is cleared, go back to filtered view
             ref.read(loansProvider.notifier).filterByStatus(next.selectedStatus);
           }
         } else if (previous?.selectedStatus != next.selectedStatus) {
@@ -187,7 +183,7 @@ class LoanManagementScreen extends ConsumerWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          ref.refresh(loansProvider);
+                          ref.read(loansProvider.notifier).refresh();
                         },
                         child: const Text('Retry'),
                       ),

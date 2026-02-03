@@ -14,7 +14,6 @@ class BorrowerDashboardScreen extends ConsumerStatefulWidget {
 
 class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScreen> {
   int _selectedIndex = 0;
-  bool _showSuccessMessage = false;
   
   final List<Widget> _screens = [
     const _DashboardContent(),
@@ -29,7 +28,6 @@ class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScree
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (ModalRoute.of(context)?.settings.arguments == 'loan_success') {
         setState(() {
-          _showSuccessMessage = true;
         });
         
         // Show success snackbar
@@ -45,7 +43,6 @@ class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScree
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) {
             setState(() {
-              _showSuccessMessage = false;
             });
           }
         });

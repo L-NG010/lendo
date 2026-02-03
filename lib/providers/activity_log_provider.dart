@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:lendo/config/supabase_config.dart';
 import 'package:lendo/models/activity_log_model.dart';
 import 'package:lendo/services/activity_log_service.dart';
 
@@ -16,8 +14,6 @@ class ActivityLogsNotifier extends AsyncNotifier<List<ActivityLog>> {
     final activityLogService = ref.read(activityLogServiceProvider);
     return await activityLogService.getAllActivityLogs();
   }
-
-  // Subscription cleanup is handled automatically by Riverpod
 
   // Refresh activity logs
   Future<void> refresh() async {

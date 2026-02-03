@@ -57,22 +57,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               TextFormField(
                 controller: _emailController,
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 14
-                ),
+                style: TextStyle(color: AppColors.white, fontSize: 14),
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.secondary,
-                    ),
+                    borderSide: BorderSide(color: AppColors.secondary),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.outline,
-                    ),
+                    borderSide: BorderSide(color: AppColors.outline),
                   ),
                   hintText: 'Input Email',
                   contentPadding: const EdgeInsets.symmetric(
@@ -80,6 +73,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     vertical: 14,
                   ),
                 ),
+                onChanged: (value) {
+                  setState(() {});
+                },
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
@@ -101,22 +97,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 14
-                ),
+                style: TextStyle(color: AppColors.white, fontSize: 14),
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.secondary,
-                    ),
+                    borderSide: BorderSide(color: AppColors.secondary),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.outline,
-                    ),
+                    borderSide: BorderSide(color: AppColors.outline),
                   ),
                   hintText: 'Input Password',
                   contentPadding: const EdgeInsets.symmetric(
@@ -137,6 +126,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     },
                   ),
                 ),
+                onChanged: (value) {
+                  setState(() {});
+                },
               ),
               const SizedBox(height: 28),
 
@@ -145,48 +137,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    final authService = ref.read(authServicePod);
-                    final state = await authService.signIn(
-                      email: _emailController.text.trim(),
-                      password: _passwordController.text,
-                    );
-                    
-                    if (state.errorMessage != null) {
-                      if (mounted) {
-                        CustomSnackBar.show(context, state.errorMessage!, isError: true);
-                      }
-                    } else {
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      
-                      final userRole = authService.getUserRole();
-                      String route;
-                      
-                      switch (userRole) {
-                        case 'admin':
-                          route = '/admin-dashboard';
-                          break;
-                        case 'officer':
-                          route = '/officer-dashboard';
-                          break;
-                        case 'borrower':
-                          route = '/borrower-dashboard';
-                          break;
-                        default:
-                          // Jika role tidak dikenal, tetap di login
-                          if (mounted) {
-                            CustomSnackBar.show(context, 'Role tidak dikenal', isError: true);
+                  onPressed:
+                      _emailController.text.isEmpty ||
+                          _passwordController.text.isEmpty
+                      ? null
+                      : () async {
+                          final authService = ref.read(authServicePod);
+                          final state = await authService.signIn(
+                            email: _emailController.text.trim(),
+                            password: _passwordController.text,
+                          );
+
+                          if (state.errorMessage != null) {
+                            if (mounted) {
+                              print(state.errorMessage);
+                              CustomSnackBar.show(
+                                context,
+                                state.errorMessage!,
+                                isError: true,
+                              );
+                            }
+                          } else {
+                            await Future.delayed(
+                              const Duration(milliseconds: 500),
+                            );
+                            final userRole = authService.getUserRole();
+                            String route;
+
+                            switch (userRole) {
+                              case 'admin':
+                                route = '/admin-dashboard';
+                                break;
+                              case 'officer':
+                                route = '/officer-dashboard';
+                                break;
+                              case 'borrower':
+                                route = '/borrower-dashboard';
+                                break;
+                              default:
+                                // Jika role tidak dikenal, tetap di login
+                                if (mounted) {
+                                  CustomSnackBar.show(
+                                    context,
+                                    'Unknown role',
+                                    isError: true,
+                                  );
+                                }
+                                return;
+                            }
+                            if (mounted) {
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                route,
+                                (route) => false,
+                              );
+                            }
                           }
-                          return;
-                      }
-                      if (mounted) {
-                        Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
-                      }
-                    }
-                  },
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
                     foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white.withOpacity(0.6),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -194,10 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   child: const Text(
                     'Login',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

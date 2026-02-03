@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../services/auth_service.dart';
 import '../auth/login.dart';
@@ -33,14 +31,14 @@ class BorrowerProfileScreen extends ConsumerWidget {
               children: [
                 // Profile Card Section
                 _buildProfileCard(user, supabaseUser),
-                
+
                 const SizedBox(height: AppSpacing.lg),
-                
+
                 // Personal Information Section
                 _buildPersonalInformationSection(user),
-                
+
                 const SizedBox(height: AppSpacing.lg),
-                
+
                 // Logout Button
                 _buildLogoutButton(context, authService),
               ],
@@ -48,20 +46,25 @@ class BorrowerProfileScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error loading profile: \$error')),
+        error: (error, stack) =>
+            Center(child: Text('Error loading profile: \$error')),
       ),
     );
   }
 
   Widget _buildProfileCard(UserModel? user, dynamic supabaseUser) {
-    String displayName = user != null && user.rawUserMetadata['name'] != null 
-        ? user.rawUserMetadata['name'] 
-        : (supabaseUser != null ? supabaseUser.email?.split('@')[0] ?? 'User' : 'User');
-    String role = user != null && user.rawUserMetadata['role'] != null 
-        ? user.rawUserMetadata['role'] 
-        : (supabaseUser != null && supabaseUser.userMetadata != null && supabaseUser.userMetadata?['role'] != null 
-            ? supabaseUser.userMetadata!['role'] 
-            : 'borrower');
+    String displayName = user != null && user.rawUserMetadata['name'] != null
+        ? user.rawUserMetadata['name']
+        : (supabaseUser != null
+              ? supabaseUser.email?.split('@')[0] ?? 'User'
+              : 'User');
+    String role = user != null && user.rawUserMetadata['role'] != null
+        ? user.rawUserMetadata['role']
+        : (supabaseUser != null &&
+                  supabaseUser.userMetadata != null &&
+                  supabaseUser.userMetadata?['role'] != null
+              ? supabaseUser.userMetadata!['role']
+              : 'borrower');
 
     return Container(
       decoration: BoxDecoration(
@@ -90,11 +93,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
                 width: 2,
               ),
             ),
-            child: const Icon(
-              Icons.person,
-              size: 40,
-              color: AppColors.white,
-            ),
+            child: const Icon(Icons.person, size: 40, color: AppColors.white),
           ),
           const SizedBox(width: AppSpacing.md),
           // Name and Role
@@ -144,9 +143,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildPersonalInformationSection(UserModel? user) {
-    String email = user != null && user.email != null 
-        ? user.email 
-        : 'email@example.com';
+    String email = user != null ? user.email : 'email@example.com';
     String phone = user != null && user.phone != null && user.phone!.isNotEmpty
         ? user.phone!
         : '-';
@@ -206,36 +203,45 @@ class BorrowerProfileScreen extends ConsumerWidget {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.secondary,
-            title: const Text('Konfirmasi Logout', style: TextStyle(color: AppColors.white)),
-            content: const Text('Apakah Anda yakin ingin logout?', style: TextStyle(color: AppColors.white)),
+            title: const Text(
+              'Konfirmasi Logout',
+              style: TextStyle(color: AppColors.white),
+            ),
+            content: const Text(
+              'Apakah Anda yakin ingin logout?',
+              style: TextStyle(color: AppColors.white),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal', style: TextStyle(color: AppColors.gray)),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: AppColors.gray),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Ya', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  'Ya',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
             ],
           ),
         );
-        
+
         if (confirm == true) {
           await authService.signOut();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.red.withOpacity(0.5), // Red with 0.5 opacity
+          color: AppColors.red.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.red,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.red, width: 1),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
@@ -250,11 +256,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
                   width: 1,
                 ),
               ),
-              child: Icon(
-                Icons.logout,
-                size: 20,
-                color: AppColors.white,
-              ),
+              child: Icon(Icons.logout, size: 20, color: AppColors.white),
             ),
             const SizedBox(width: AppSpacing.md),
             const Expanded(
@@ -291,11 +293,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
               width: 1,
             ),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: AppColors.primary,
-          ),
+          child: Icon(icon, size: 20, color: AppColors.primary),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(

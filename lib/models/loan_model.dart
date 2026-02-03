@@ -8,7 +8,7 @@ class LoanModel {
   final String createdAt;
   final String loanDate;
   final String? reason;
-  final String? userEmail;
+  final String? officerReason;
 
   LoanModel({
     required this.id,
@@ -20,7 +20,7 @@ class LoanModel {
     required this.createdAt,
     required this.loanDate,
     this.reason,
-    this.userEmail,
+    this.officerReason,
   });
 
   // Factory method to create from JSON
@@ -35,7 +35,7 @@ class LoanModel {
       createdAt: (json['created_at'] ?? '').toString(),
       loanDate: (json['loan_date'] ?? '').toString(),
       reason: json['reason']?.toString(),
-      userEmail: null, // We're not getting email from auth.users anymore
+      officerReason: json['officer_reason']?.toString(),
     );
   }
 
@@ -51,6 +51,7 @@ class LoanModel {
       'created_at': createdAt,
       'loan_date': loanDate,
       'reason': reason,
+      'officer_reason': officerReason,
     };
   }
 }
@@ -61,6 +62,7 @@ class LoanDetailModel {
   final String assetId;
   final String condBorrow;
   final String? condReturn;
+  final String? assetName;
 
   LoanDetailModel({
     required this.id,
@@ -68,6 +70,7 @@ class LoanDetailModel {
     required this.assetId,
     required this.condBorrow,
     this.condReturn,
+    this.assetName,
   });
 
   // Factory method to create from JSON
@@ -78,6 +81,9 @@ class LoanDetailModel {
       assetId: (json['asset_id'] ?? '').toString(),
       condBorrow: (json['cond_borrow'] ?? '').toString(),
       condReturn: json['cond_return']?.toString(),
+      assetName: json['assets'] != null
+          ? json['assets']['name']?.toString()
+          : null,
     );
   }
 
@@ -89,6 +95,7 @@ class LoanDetailModel {
       'asset_id': assetId,
       'cond_borrow': condBorrow,
       'cond_return': condReturn,
+      'asset_name': assetName,
     };
   }
 }

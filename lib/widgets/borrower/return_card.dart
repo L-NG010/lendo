@@ -17,7 +17,6 @@ class ReturnCard extends StatefulWidget {
 
 class _ReturnCardState extends State<ReturnCard> {
   final Map<String, String> _returnConditions = {};
-  String _returnReason = '';
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +263,6 @@ class _ReturnCardState extends State<ReturnCard> {
           maxLines: 3,
           onChanged: (value) {
             setState(() {
-              _returnReason = value;
             });
           },
         ),

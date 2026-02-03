@@ -133,16 +133,21 @@ class CustomSidebar extends ConsumerWidget {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Konfirmasi Logout'),
-                      content: const Text('Apakah Anda yakin ingin logout?'),
+                      backgroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.outline, width: 1),
+                      ),
+                      title: const Text('Konfirmasi Logout', style: TextStyle(color: AppColors.white)),
+                      content: const Text('Apakah Anda yakin ingin logout?', style: TextStyle(color: AppColors.white)),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Batal'),
+                          child: const Text('Batal', style: TextStyle(color: AppColors.white)),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Ya'),
+                          child: const Text('Ya', style: TextStyle(color: AppColors.white)),
                         ),
                       ],
                     ),

@@ -60,7 +60,7 @@ class LogActivityScreen extends ConsumerWidget {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  ref.refresh(activityLogsProvider);
+                  ref.read(activityLogsProvider.notifier).refresh();
                 },
                 child: activityLogsAsync.when(
                   data: (logs) {
