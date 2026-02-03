@@ -4,17 +4,22 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/bottom_navigation.dart';
 import 'profile_screen.dart';
 import 'submission_screen.dart';
+import 'package:lendo/services/auth_service.dart';
+import 'package:lendo/providers/loan_provider.dart';
+import 'package:lendo/models/loan_model.dart';
 
 class BorrowerDashboardScreen extends ConsumerStatefulWidget {
   const BorrowerDashboardScreen({super.key});
 
   @override
-  ConsumerState<BorrowerDashboardScreen> createState() => _BorrowerDashboardScreenState();
+  ConsumerState<BorrowerDashboardScreen> createState() =>
+      _BorrowerDashboardScreenState();
 }
 
-class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScreen> {
+class _BorrowerDashboardScreenState
+    extends ConsumerState<BorrowerDashboardScreen> {
   int _selectedIndex = 0;
-  
+
   final List<Widget> _screens = [
     const _DashboardContent(),
     const BorrowerSubmissionScreen(),
@@ -26,26 +31,15 @@ class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScree
     super.initState();
     // Check if we came from a successful submission
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ModalRoute.of(context)?.settings.arguments == 'loan_success') {
-        setState(() {
-        });
-        
-        // Show success snackbar
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args == 'loan_success') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Peminjaman berhasil diajukan!'),
+            content: Text('Loan request submitted successfully!'),
             backgroundColor: AppColors.primary,
             duration: Duration(seconds: 3),
           ),
         );
-        
-        // Reset the flag after showing the message
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-            });
-          }
-        });
       }
     });
   }
@@ -53,10 +47,7 @@ class _BorrowerDashboardScreenState extends ConsumerState<BorrowerDashboardScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: BorrowerBottomNavigation(
         selectedIndex: _selectedIndex,
         onIndexChanged: (index) {
@@ -74,39 +65,83 @@ class _DashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServicePod);
+    final user = authService.getCurrentUser();
+    final loansAsync = ref.watch(loansProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(color: AppColors.white)),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(color: AppColors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: ListView(
-          children: [
-            const SizedBox(height: AppSpacing.md),
-            
-            // Stats Cards
-            _buildStatsSection(),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Quick Actions
-            _buildQuickActions(context),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Recent Activity
-            _buildRecentActivity(),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return ref.refresh(loansProvider);
+          },
+          child: loansAsync.when(
+            data: (allLoans) {
+              if (user == null) {
+                return const Center(child: Text('User not found'));
+              }
+              // Filter loans for current user
+              final myLoans = allLoans
+                  .where((l) => l.userId == user.id)
+                  .toList();
+
+              // KPIs
+              final totalLoans = myLoans.length;
+              final pendingLoans = myLoans
+                  .where((l) => l.status == 'pending')
+                  .length;
+              final penaltiesCount = myLoans
+                  .where((l) => (l.penaltyAmount ?? 0) > 0)
+                  .length;
+
+              // Recent Requests (Top 5 latest)
+              final recentLoans = [...myLoans]
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              final topRecent = recentLoans.take(5).toList();
+
+              return ListView(
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Stats Cards
+                  _buildStatsSection(totalLoans, pendingLoans, penaltiesCount),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Quick Actions
+                  _buildQuickActions(context),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Recent Request
+                  _buildRecentRequests(context, ref, topRecent),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(
+              child: Text(
+                'Error: $err',
+                style: const TextStyle(color: AppColors.red),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(int total, int pending, int penalties) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -114,8 +149,8 @@ class _DashboardContent extends ConsumerWidget {
           children: [
             Expanded(
               child: _buildStatCard(
-                title: 'Total Dipinjam',
-                value: '12',
+                title: 'Total Loans',
+                value: total.toString(),
                 icon: Icons.inventory,
                 color: AppColors.primary,
               ),
@@ -123,8 +158,8 @@ class _DashboardContent extends ConsumerWidget {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: _buildStatCard(
-                title: 'Sedang Diajukan',
-                value: '3',
+                title: 'Pending',
+                value: pending.toString(),
                 icon: Icons.pending_actions,
                 color: AppColors.outline,
               ),
@@ -132,8 +167,8 @@ class _DashboardContent extends ConsumerWidget {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: _buildStatCard(
-                title: 'Jatuh Tempo',
-                value: '1',
+                title: 'Penalties',
+                value: penalties.toString(),
                 icon: Icons.warning,
                 color: AppColors.red,
               ),
@@ -173,10 +208,7 @@ class _DashboardContent extends ConsumerWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.gray,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.gray),
           ),
         ],
       ),
@@ -260,10 +292,7 @@ class _DashboardContent extends ConsumerWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.white),
             ),
           ],
         ),
@@ -271,24 +300,14 @@ class _DashboardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentActivity() {
-    final activities = [
-      {
-        'title': 'Pengajuan Laptop Approved',
-        'date': '2 hours ago',
-        'status': 'approved',
-      },
-      {
-        'title': 'Printer sedang diproses',
-        'date': '1 day ago',
-        'status': 'pending',
-      },
-      {
-        'title': 'Projector dikembalikan',
-        'date': '3 days ago',
-        'status': 'returned',
-      },
-    ];
+  Widget _buildRecentRequests(
+    BuildContext context,
+    WidgetRef ref,
+    List<LoanModel> loans,
+  ) {
+    if (loans.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -301,7 +320,7 @@ class _DashboardContent extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Recent Activity',
+            'Recent Request',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -309,64 +328,112 @@ class _DashboardContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ...activities.map((activity) => _buildActivityItem(activity)).toList(),
+          ...loans.map((loan) => _buildActivityCard(context, ref, loan)),
         ],
       ),
     );
   }
 
-  Widget _buildActivityItem(Map<String, dynamic> activity) {
+  Widget _buildActivityCard(
+    BuildContext context,
+    WidgetRef ref,
+    LoanModel loan,
+  ) {
     Color statusColor = AppColors.gray;
-    if (activity['status'] == 'approved') {
+    if (loan.status == 'approved') {
       statusColor = AppColors.primary;
-    } else if (activity['status'] == 'pending') {
+    } else if (loan.status == 'pending') {
       statusColor = AppColors.outline;
-    } else if (activity['status'] == 'returned') {
+    } else if (loan.status == 'returned') {
       statusColor = Colors.green;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: statusColor,
-              shape: BoxShape.circle,
-            ),
+    // Calculate time ago
+    String timeAgo = '';
+    try {
+      final created = DateTime.parse(loan.createdAt);
+      final diff = DateTime.now().difference(created);
+      if (diff.inMinutes < 60) {
+        timeAgo = '${diff.inMinutes} min ago';
+      } else if (diff.inHours < 24) {
+        timeAgo = '${diff.inHours} hours ago';
+      } else {
+        timeAgo = '${diff.inDays} days ago';
+      }
+    } catch (e) {
+      timeAgo = '-';
+    }
+
+    return FutureBuilder<List<LoanDetailModel>>(
+      future: ref.read(loanServiceProvider).getLoanDetails(loan.id),
+      builder: (context, snapshot) {
+        String title = 'Loan Request';
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final names = snapshot.data!
+              .map((d) => d.assetName ?? 'Unknown')
+              .join(', ');
+          title = names;
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: statusColor.withValues(alpha: 0.3)),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity['title'],
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 14,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
                 ),
-                Text(
-                  activity['date'],
-                  style: const TextStyle(
-                    color: AppColors.gray,
-                    fontSize: 12,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          loan.status.toUpperCase(),
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          timeAgo,
+                          style: const TextStyle(
+                            color: AppColors.gray,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

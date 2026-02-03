@@ -22,7 +22,7 @@ class ProfileScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
-      drawer: const CustomSidebar(),
+      drawer: CustomSidebar(),
       body: currentUserAsync.when(
         data: (user) {
           return SingleChildScrollView(

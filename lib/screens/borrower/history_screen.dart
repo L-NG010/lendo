@@ -1,155 +1,185 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/widgets/borrower/expandable_card.dart';
+import 'package:lendo/providers/loan_provider.dart';
+import 'package:lendo/services/auth_service.dart';
+import 'package:lendo/models/loan_model.dart';
+import 'package:intl/intl.dart';
 
-class BorrowerHistoryScreen extends StatefulWidget {
+class BorrowerHistoryScreen extends ConsumerWidget {
   const BorrowerHistoryScreen({super.key});
 
   @override
-  State<BorrowerHistoryScreen> createState() => _BorrowerHistoryScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServicePod);
+    final user = authService.getCurrentUser();
+    final loansAsync = ref.watch(loansProvider);
 
-class _BorrowerHistoryScreenState extends State<BorrowerHistoryScreen> {
-  // Mock data for loan history
-  final List<Map<String, dynamic>> _loanHistory = [
-    {
-      'id': '1',
-      'loanDate': '2026-01-20',
-      'dueDate': '2026-02-20',
-      'returnedDate': null,
-      'status': 'active',
-      'assets': [
-        {'name': 'Laptop Dell XPS 13', 'quantity': 1},
-        {'name': 'Mouse Wireless', 'quantity': 1},
-      ]
-    },
-    {
-      'id': '2',
-      'loanDate': '2026-01-15',
-      'dueDate': '2026-01-25',
-      'returnedDate': '2026-01-24',
-      'status': 'returned',
-      'assets': [
-        {'name': 'Proyektor', 'quantity': 1},
-      ]
-    },
-    {
-      'id': '3',
-      'loanDate': '2026-01-10',
-      'dueDate': '2026-01-20',
-      'returnedDate': '2026-01-19',
-      'status': 'returned',
-      'assets': [
-        {'name': 'Kabel HDMI', 'quantity': 2},
-      ]
-    },
-    {
-      'id': '4',
-      'loanDate': '2026-01-05',
-      'dueDate': '2026-01-15',
-      'returnedDate': '2026-01-14',
-      'status': 'returned',
-      'assets': [
-        {'name': 'Speaker Bluetooth', 'quantity': 1},
-      ]
-    },
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loan History', style: TextStyle(color: AppColors.white)),
+        title: const Text(
+          'Loan History',
+          style: TextStyle(color: AppColors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: _loanHistory.isEmpty
-            ? _buildEmptyState()
-            : ListView.builder(
-                itemCount: _loanHistory.length,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return ref.refresh(loansProvider);
+          },
+          child: loansAsync.when(
+            data: (allLoans) {
+              if (user == null) {
+                return const Center(child: Text('User not found'));
+              }
+              // Filter all loans for current user
+              final myLoans = allLoans
+                  .where((l) => l.userId == user.id)
+                  .toList();
+
+              if (myLoans.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return ListView.builder(
+                itemCount: myLoans.length,
                 itemBuilder: (context, index) {
-                  final loan = _loanHistory[index];
+                  final loan = myLoans[index];
                   Color statusColor = AppColors.gray;
-                  String statusText = 'Unknown';
-                  
-                  if (loan['status'] == 'active') {
+
+                  if (loan.status == 'approved') {
                     statusColor = AppColors.primary;
-                    statusText = 'Active';
-                  } else if (loan['status'] == 'returned') {
+                  } else if (loan.status == 'returned') {
                     statusColor = Colors.green;
-                    statusText = 'Returned';
-                  } else if (loan['status'] == 'overdue') {
+                  } else if (loan.status == 'rejected') {
                     statusColor = AppColors.red;
-                    statusText = 'Overdue';
+                  } else if (loan.status == 'pending') {
+                    statusColor = AppColors.outline;
                   }
 
-                  // Create expanded content for the card
-                  List<Widget> expandedContent = [
-                    _buildDetailRow('Loan Date:', loan['loanDate']),
-                    _buildDetailRow('Due Date:', loan['dueDate']),
-                    if (loan['returnedDate'] != null) 
-                      _buildDetailRow('Returned Date:', loan['returnedDate']),
-                    
-                    const SizedBox(height: AppSpacing.sm),
-                    
-                    const Text(
-                      'Assets Borrowed:',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    
-                    ...loan['assets'].map<Widget>((asset) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              '• ${asset['name']}',
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'x${asset['quantity']}',
-                              style: const TextStyle(
-                                color: AppColors.gray,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ];
+                  // Calculate status text properly
+                  String statusText =
+                      loan.status[0].toUpperCase() + loan.status.substring(1);
+                  if (loan.status == 'approved' && loan.returnedAt != null) {
+                    statusText = 'Pending Return Confirmation';
+                    statusColor = Colors.orange;
+                  }
 
-                  return ExpandableCard(
-                    title: 'Loan #${loan['id']}',
-                    subtitle: 'Status: ${loan['status']}',
-                    statusColor: statusColor,
-                    statusText: statusText,
-                    icon: Icons.history,
-                    expandedContent: expandedContent,
-                    initiallyExpanded: index == 0, // First item expanded by default
+                  return _buildLoanCard(
+                    context,
+                    ref,
+                    loan,
+                    statusColor,
+                    statusText,
                   );
                 },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(
+              child: Text(
+                'Error: $err',
+                style: const TextStyle(color: AppColors.red),
               ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildLoanCard(
+    BuildContext context,
+    WidgetRef ref,
+    LoanModel loan,
+    Color statusColor,
+    String statusText,
+  ) {
+    return FutureBuilder<List<LoanDetailModel>>(
+      future: ref.read(loanServiceProvider).getLoanDetails(loan.id),
+      builder: (context, snapshot) {
+        List<Widget> expandedContent = [
+          _buildDetailRow('Loan Date:', loan.loanDate),
+          _buildDetailRow('Due Date:', loan.dueDate),
+          if (loan.returnedAt != null)
+            _buildDetailRow('Returned Date:', loan.returnedAt!),
+          if ((loan.penaltyAmount ?? 0) > 0)
+            _buildDetailRow(
+              'Penalty:',
+              'Rp ${NumberFormat('#,###').format(loan.penaltyAmount)}',
+            ),
+          if (loan.reason != null && loan.reason!.isNotEmpty)
+            _buildDetailRow('Reason:', loan.reason!),
+
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'Assets Borrowed:',
+            style: TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+        ];
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          expandedContent.add(
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        } else if (snapshot.hasData) {
+          expandedContent.addAll(
+            snapshot.data!.map((detail) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '• ${detail.assetName ?? 'Asset #${detail.assetId}'}',
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          );
+        }
+
+        return ExpandableCard(
+          title:
+              'Loan #${loan.id.length > 8 ? loan.id.substring(0, 8) + '...' : loan.id}',
+          subtitle: 'Status: $statusText',
+          statusColor: statusColor,
+          statusText: statusText,
+          icon: Icons.history,
+          expandedContent: expandedContent,
+          initiallyExpanded: false,
+        );
+      },
     );
   }
 
@@ -158,25 +188,18 @@ class _BorrowerHistoryScreenState extends State<BorrowerHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.history_outlined,
-            size: 64,
-            color: AppColors.gray,
-          ),
+          const Icon(Icons.history_outlined, size: 64, color: AppColors.gray),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No History',
-            style: TextStyle(
-              fontSize: 18,
-              color: AppColors.gray,
-            ),
+            style: TextStyle(fontSize: 18, color: AppColors.gray),
           ),
           const SizedBox(height: 8),
           Text(
             'You have no loan history yet',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.gray.withOpacity(0.7),
+              color: AppColors.gray.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -188,20 +211,19 @@ class _BorrowerHistoryScreenState extends State<BorrowerHistoryScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.gray,
-              fontSize: 12,
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.gray, fontSize: 12),
             ),
           ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.white,
-              fontSize: 12,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: AppColors.white, fontSize: 12),
             ),
           ),
         ],

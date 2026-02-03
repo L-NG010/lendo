@@ -50,7 +50,7 @@ class LogActivityScreen extends ConsumerWidget {
           ),
         ],
       ),
-      drawer: const CustomSidebar(),
+      drawer: CustomSidebar(),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(

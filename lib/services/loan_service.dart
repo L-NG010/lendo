@@ -234,12 +234,20 @@ class LoanService {
         name: 'LoanService.createLoanDetails',
       );
 
-      final response = await _supabase.from('loan_details').insert({
+      final dataToInsert = {
         'loan_id': loanId,
         'asset_id': assetId,
         'cond_borrow': condBorrow ?? 'good',
-        'cond_return': condReturn,
-      });
+      };
+
+      // Only set cond_return if explicitly provided (for returns, not initial borrows)
+      if (condReturn != null) {
+        dataToInsert['cond_return'] = condReturn;
+      }
+
+      final response = await _supabase
+          .from('loan_details')
+          .insert(dataToInsert);
 
       if (response.error != null) {
         dev.log(

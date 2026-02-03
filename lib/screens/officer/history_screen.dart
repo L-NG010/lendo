@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/providers/loan_provider.dart';
-import 'package:lendo/widgets/officer_sidebar.dart';
+import 'package:lendo/widgets/sidebar.dart';
 
 class OfficerHistoryScreen extends ConsumerWidget {
   const OfficerHistoryScreen({super.key});
@@ -13,7 +13,7 @@ class OfficerHistoryScreen extends ConsumerWidget {
     final allLoansAsync = ref.watch(loansProvider);
 
     return Scaffold(
-      drawer: const OfficerSidebar(),
+      drawer: CustomSidebar(),
       appBar: AppBar(
         title: const Text('Loan History'),
         backgroundColor: Colors.transparent,

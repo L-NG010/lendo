@@ -4,17 +4,32 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/providers/loan_provider.dart';
 import 'package:lendo/providers/officer/request_provider.dart';
-import 'package:lendo/widgets/officer_sidebar.dart';
+import 'package:lendo/widgets/sidebar.dart';
 
-class OfficerReturnScreen extends ConsumerWidget {
+class OfficerReturnScreen extends ConsumerStatefulWidget {
   const OfficerReturnScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OfficerReturnScreen> createState() =>
+      _OfficerReturnScreenState();
+}
+
+class _OfficerReturnScreenState extends ConsumerState<OfficerReturnScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh loans data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(loansProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final allLoansAsync = ref.watch(loansProvider);
 
     return Scaffold(
-      drawer: const OfficerSidebar(),
+      drawer: CustomSidebar(),
       appBar: AppBar(
         title: const Text('Returns'),
         backgroundColor: Colors.transparent,
@@ -37,18 +52,22 @@ class OfficerReturnScreen extends ConsumerWidget {
                 data: (loans) {
                   // Filter for loans that have been returned (returnedAt is not null)
                   // AND have 'returned' status (pending approval).
-                  // If approved, status changes to something else (e.g. approved), 
+                  // If approved, status changes to something else (e.g. approved),
                   // or we assume successful approval removes 'returned' status or similar.
                   // Based on typical flows, we only show items needing action.
                   final returnedLoans = loans
-                      .where((loan) => loan.returnedAt != null && loan.status == 'returned')
+                      .where(
+                        (loan) =>
+                            loan.returnedAt != null &&
+                            loan.status == 'returned',
+                      )
                       .toList();
 
                   // Sort by returned date descending (most recent first)
                   returnedLoans.sort((a, b) {
-                     final dateA = a.returnedAt ?? '';
-                     final dateB = b.returnedAt ?? '';
-                     return dateB.compareTo(dateA);
+                    final dateA = a.returnedAt ?? '';
+                    final dateB = b.returnedAt ?? '';
+                    return dateB.compareTo(dateA);
                   });
 
                   if (returnedLoans.isEmpty) {
@@ -60,12 +79,18 @@ class OfficerReturnScreen extends ConsumerWidget {
                     );
                   }
 
-                  return ListView.builder(
-                    itemCount: returnedLoans.length,
-                    itemBuilder: (context, index) {
-                      final loan = returnedLoans[index];
-                      return _buildLoanCard(context, ref, loan);
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(loansProvider);
+                      await ref.read(loansProvider.future);
                     },
+                    child: ListView.builder(
+                      itemCount: returnedLoans.length,
+                      itemBuilder: (context, index) {
+                        final loan = returnedLoans[index];
+                        return _buildLoanCard(context, ref, loan);
+                      },
+                    ),
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -175,64 +200,66 @@ class OfficerReturnScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
-                
+
                 if (loan.penaltyAmount != null && loan.penaltyAmount! > 0) ...[
-                   Container(
-                     padding: const EdgeInsets.all(AppSpacing.sm),
-                     decoration: BoxDecoration(
-                       color: AppColors.red.withValues(alpha: 0.1),
-                       borderRadius: BorderRadius.circular(8),
-                       border: Border.all(
-                         color: AppColors.red.withValues(alpha: 0.3),
-                       ),
-                     ),
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         if (loan.lateDays != null && int.tryParse(loan.lateDays!) != null && int.parse(loan.lateDays!) > 0)
-                           Padding(
-                             padding: const EdgeInsets.only(bottom: 4.0),
-                             child: Row(
-                               children: [
-                                 const Icon(
-                                   Icons.timer_off_outlined,
-                                   color: AppColors.red,
-                                   size: 16,
-                                 ),
-                                 const SizedBox(width: 8),
-                                 Text(
-                                   'Late ${loan.lateDays} days',
-                                   style: const TextStyle(
-                                     color: AppColors.white,
-                                     fontSize: 12,
-                                     fontWeight: FontWeight.w500,
-                                   ),
-                                 ),
-                               ],
-                             ),
-                           ),
-                         Row(
-                           children: [
-                             const Icon(
-                               Icons.monetization_on_outlined,
-                               color: AppColors.red,
-                               size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Total Penalty: Rp ${loan.penaltyAmount!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                style: const TextStyle(
-                                  color: AppColors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.red.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (loan.lateDays != null &&
+                            int.tryParse(loan.lateDays!) != null &&
+                            int.parse(loan.lateDays!) > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.timer_off_outlined,
+                                  color: AppColors.red,
+                                  size: 16,
                                 ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Late ${loan.lateDays} days',
+                                  style: const TextStyle(
+                                    color: AppColors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.monetization_on_outlined,
+                              color: AppColors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Total Penalty: Rp ${loan.penaltyAmount!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
                               ),
-                           ],
-                         ),
-                       ],
-                     ),
-                   ),
-                   const SizedBox(height: AppSpacing.md),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                 ],
 
                 Row(
@@ -290,26 +317,26 @@ class OfficerReturnScreen extends ConsumerWidget {
         children: [
           Text(
             detail.assetName ?? 'Asset ${detail.assetId}',
-             style: const TextStyle(
-               color: AppColors.white,
-               fontWeight: FontWeight.w500,
-             ),
+            style: const TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-           const SizedBox(height: 4),
-           Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               Text(
-                 'Borrow: ${detail.condBorrow}',
-                 style: const TextStyle(color: AppColors.gray, fontSize: 12),
-               ),
-               if (detail.condReturn != null)
-                 Text(
-                   'Return: ${detail.condReturn}',
-                   style: const TextStyle(color: AppColors.gray, fontSize: 12),
-                 ),
-             ],
-           )
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Borrow: ${detail.condBorrow}',
+                style: const TextStyle(color: AppColors.gray, fontSize: 12),
+              ),
+              if (detail.condReturn != null)
+                Text(
+                  'Return: ${detail.condReturn}',
+                  style: const TextStyle(color: AppColors.gray, fontSize: 12),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -339,7 +366,7 @@ class OfficerReturnScreen extends ConsumerWidget {
                 try {
                   final loanIdInt = int.tryParse(loan.id) ?? 0;
                   if (loanIdInt == 0) {
-                     throw Exception('Invalid Loan ID format');
+                    throw Exception('Invalid Loan ID format');
                   }
 
                   await ref
@@ -395,7 +422,7 @@ class OfficerReturnScreen extends ConsumerWidget {
                 try {
                   final loanIdInt = int.tryParse(loan.id) ?? 0;
                   if (loanIdInt == 0) {
-                     throw Exception('Invalid Loan ID format');
+                    throw Exception('Invalid Loan ID format');
                   }
 
                   await ref
@@ -432,11 +459,13 @@ class OfficerReturnScreen extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(approved ? 'Approved Successfully' : 'Rejected Successfully'),
+          title: Text(
+            approved ? 'Approved Successfully' : 'Rejected Successfully',
+          ),
           content: Text(
-            approved 
-              ? 'Return has been approved.' 
-              : 'Return has been rejected and status reverted to borrowed.',
+            approved
+                ? 'Return has been approved.'
+                : 'Return has been rejected and status reverted to borrowed.',
           ),
           actions: [
             TextButton(

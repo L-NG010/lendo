@@ -118,7 +118,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
@@ -151,7 +151,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
             'You have no approved loans to return',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.gray.withOpacity(0.7),
+              color: AppColors.gray.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -360,7 +360,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                       decoration: InputDecoration(
                         hintText: 'Enter reason for returning these items...',
                         hintStyle: TextStyle(
-                          color: AppColors.gray.withOpacity(0.6),
+                          color: AppColors.gray.withValues(alpha: 0.6),
                         ),
                         filled: true,
                         fillColor: AppColors.background,

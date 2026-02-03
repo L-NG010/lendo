@@ -37,6 +37,15 @@ class _BorrowerSubmissionScreenState
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh asset stock data every time screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(assetStockProvider);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
@@ -97,175 +106,211 @@ class _BorrowerSubmissionScreenState
             child: Column(
               children: [
                 Expanded(
-                  child: ref.watch(assetStockProvider).when(
-                    data: (assetStocks) {
-                      return ListView.builder(
-                        itemCount: assetStocks.length,
-                        itemBuilder: (context, index) {
-                          final asset = assetStocks[index];
-                          final isInCart = _isItemInCart(asset.name);
-                          final quantity = _getItemQuantity(asset.name);
-                          final isStockExhausted = quantity >= asset.available;
-                          final isNotAvailable = asset.available <= 0;
+                  child: ref
+                      .watch(assetStockProvider)
+                      .when(
+                        data: (assetStocks) {
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              ref.invalidate(assetStockProvider);
+                              await ref.read(assetStockProvider.future);
+                            },
+                            child: ListView.builder(
+                              itemCount: assetStocks.length,
+                              itemBuilder: (context, index) {
+                                final asset = assetStocks[index];
+                                final isInCart = _isItemInCart(asset.name);
+                                final quantity = _getItemQuantity(asset.name);
+                                final isStockExhausted =
+                                    quantity >= asset.available;
+                                final isNotAvailable = asset.available <= 0;
 
-                          return Container(
-                            margin:
-                                const EdgeInsets.only(bottom: AppSpacing.sm),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isNotAvailable
-                                    ? AppColors.red.withOpacity(0.5)
-                                    : isInCart
-                                        ? AppColors.primary
-                                        : AppColors.outline,
-                                width: isNotAvailable ? 1 : (isInCart ? 2 : 1),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: asset.pictureUrl != null
-                                          ? DecorationImage(
-                                              image: NetworkImage(
-                                                  asset.pictureUrl!),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : null,
-                                    ),
-                                    child: asset.pictureUrl == null
-                                        ? Icon(Icons.image,
-                                            size: 16, color: AppColors.gray)
-                                        : null,
+                                return Container(
+                                  margin: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondary,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isNotAvailable
+                                          ? AppColors.red.withValues(alpha: 0.5)
+                                          : isInCart
+                                          ? AppColors.primary
+                                          : AppColors.outline,
+                                      width: isNotAvailable
+                                          ? 1
+                                          : (isInCart ? 2 : 1),
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          asset.name,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.white,
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.background,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            image: asset.pictureUrl != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(
+                                                      asset.pictureUrl!,
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          child: asset.pictureUrl == null
+                                              ? Icon(
+                                                  Icons.image,
+                                                  size: 16,
+                                                  color: AppColors.gray,
+                                                )
+                                              : null,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          isNotAvailable 
-                                            ? 'Asset tidak tersedia' 
-                                            : 'Stok: ${asset.available}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: isNotAvailable ? AppColors.red : AppColors.gray,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                asset.name,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.white,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                isNotAvailable
+                                                    ? 'Asset unavailable'
+                                                    : 'Stock: ${asset.available}',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isNotAvailable
+                                                      ? AppColors.red
+                                                      : AppColors.gray,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Stack(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.add_shopping_cart,
+                                                color:
+                                                    isNotAvailable ||
+                                                        isStockExhausted
+                                                    ? AppColors.gray.withValues(
+                                                        alpha: 0.5,
+                                                      )
+                                                    : AppColors.gray,
+                                                size: 20,
+                                              ),
+                                              onPressed:
+                                                  isNotAvailable ||
+                                                      isStockExhausted
+                                                  ? null
+                                                  : () {
+                                                      setState(() {
+                                                        var existingItemIndex =
+                                                            _cartItems.indexWhere(
+                                                              (item) =>
+                                                                  item['name'] ==
+                                                                  asset.name,
+                                                            );
+
+                                                        if (existingItemIndex !=
+                                                            -1) {
+                                                          int currentQuantity =
+                                                              _cartItems[existingItemIndex]['quantity']
+                                                                  as int;
+                                                          if (currentQuantity <
+                                                              asset.available) {
+                                                            _cartItems[existingItemIndex]['quantity'] =
+                                                                currentQuantity +
+                                                                1;
+                                                          }
+                                                        } else {
+                                                          _cartItems.add({
+                                                            'name': asset.name,
+                                                            'quantity': 1,
+                                                            'stock':
+                                                                asset.available,
+                                                          });
+                                                        }
+                                                      });
+                                                    },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 32,
+                                                minHeight: 32,
+                                              ),
+                                            ),
+                                            if (isInCart && quantity > 0)
+                                              Positioned(
+                                                top: 0,
+                                                right: 0,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.primary,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 16,
+                                                        minHeight: 16,
+                                                      ),
+                                                  child: Text(
+                                                    '$quantity',
+                                                    style: const TextStyle(
+                                                      color: AppColors.white,
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Stack(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.add_shopping_cart,
-                                          color: isNotAvailable || isStockExhausted
-                                              ? AppColors.gray.withOpacity(0.5)
-                                              : AppColors.gray,
-                                          size: 20,
-                                        ),
-                                        onPressed: isNotAvailable || isStockExhausted
-                                            ? null
-                                            : () {
-                                                setState(() {
-                                                  var existingItemIndex =
-                                                      _cartItems.indexWhere(
-                                                    (item) => item['name'] == asset.name,
-                                                  );
-
-                                                  if (existingItemIndex != -1) {
-                                                    int currentQuantity =
-                                                        _cartItems[
-                                                                existingItemIndex]
-                                                            ['quantity'] as int;
-                                                    if (currentQuantity < asset.available) {
-                                                      _cartItems[existingItemIndex]
-                                                              ['quantity'] =
-                                                          currentQuantity + 1;
-                                                    }
-                                                  } else {
-                                                    _cartItems.add({
-                                                      'name': asset.name,
-                                                      'quantity': 1,
-                                                      'stock': asset.available,
-                                                    });
-                                                  }
-                                                });
-                                              },
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 32,
-                                          minHeight: 32,
-                                        ),
-                                      ),
-                                      if (isInCart && quantity > 0)
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 16,
-                                              minHeight: 16,
-                                            ),
-                                            child: Text(
-                                              '$quantity',
-                                              style: const TextStyle(
-                                                color: AppColors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           );
                         },
-                      );
-                    },
-                    loading: () => const Center(
-                        child: CircularProgressIndicator()),
-                    error: (e, _) => Center(
-                      child: Text(
-                        'Gagal memuat aset: $e',
-                        style: const TextStyle(color: AppColors.white),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(
+                          child: Text(
+                            'Failed to load assets: $e',
+                            style: const TextStyle(color: AppColors.white),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -323,13 +368,17 @@ class _BorrowerSubmissionScreenState
                               onRemoveItem: (item) {
                                 setState(() {
                                   _cartItems.removeWhere(
-                                      (cartItem) => cartItem['name'] == item['name']);
+                                    (cartItem) =>
+                                        cartItem['name'] == item['name'],
+                                  );
                                 });
                               },
                               onUpdateQuantity: (item, newQuantity) {
                                 setState(() {
                                   final index = _cartItems.indexWhere(
-                                      (cartItem) => cartItem['name'] == item['name']);
+                                    (cartItem) =>
+                                        cartItem['name'] == item['name'],
+                                  );
                                   if (index != -1) {
                                     _cartItems[index]['quantity'] = newQuantity;
                                   }
@@ -367,15 +416,15 @@ class _EmptyCart extends StatelessWidget {
           Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.gray),
           const SizedBox(height: 16),
           Text(
-            'Keranjang kosong',
+            'Cart is empty',
             style: TextStyle(fontSize: 16, color: AppColors.gray),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tambahkan aset untuk dipinjam',
+            'Add assets to borrow',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.gray.withOpacity(0.7),
+              color: AppColors.gray.withValues(alpha: 0.7),
             ),
           ),
         ],

@@ -104,32 +104,33 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
           onPressed: () async {
             if (currentUser?.id == null) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('User belum login!')),
+                const SnackBar(content: Text('User not logged in!')),
               );
               return;
             }
 
             if (pickupDate == null || returnDate == null) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tanggal harus diisi!')),
+                const SnackBar(content: Text('Dates must be filled!')),
               );
               return;
             }
 
             if (widget.cartItems.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Keranjang kosong!')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Cart is empty!')));
               return;
             }
 
             final loanService = ref.read(loanServiceProvider);
             final assetService = ref.read(assetStockServiceProvider);
 
-            
             try {
-              var assetIds = await assetService.getAssetIdsForCartItems(widget.cartItems);
-              
+              var assetIds = await assetService.getAssetIdsForCartItems(
+                widget.cartItems,
+              );
+
               await loanService.addLoan(
                 userId: currentUser!.id,
                 loanDate: pickupDate!,
@@ -138,28 +139,41 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
                 assetIds: assetIds,
               );
 
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/borrower/own-submissions',
-                (route) => false,
-                arguments: 'loan_success',
-              );
-              
-              print('Navigation completed');
-            } catch (e) { 
+              // Immediately refresh asset stock data for the submission screen
+              ref.invalidate(assetStockProvider);
+
+              // Notify success via callback to clear cart
+              widget.onSubmissionSuccess?.call();
+
+              if (context.mounted) {
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Loan request submitted successfully!'),
+                    backgroundColor: AppColors.primary,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                // Navigate to own-submissions (no argument needed)
+                Navigator.pushNamed(context, '/borrower/own-submissions');
+              }
+            } catch (e) {
               if (mounted) {
                 String errorMessage = e.toString();
-                if (errorMessage.contains('tidak tersedia') || errorMessage.contains('sudah dipinjam')) {
-                  errorMessage = 'Asset tidak tersedia atau sudah dipinjam. Silakan refresh halaman.';
+                if (errorMessage.contains('tidak tersedia') ||
+                    errorMessage.contains('sudah dipinjam')) {
+                  errorMessage =
+                      'Asset unavailable or already borrowed. Please refresh.';
                 } else if (errorMessage.contains('Network')) {
-                  errorMessage = 'Koneksi internet bermasalah. Silakan coba lagi.';
+                  errorMessage = 'Network error. Please try again.';
                 } else if (errorMessage.contains('timeout')) {
-                  errorMessage = 'Waktu koneksi habis. Silakan coba lagi.';
+                  errorMessage = 'Connection timeout. Please try again.';
                 }
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Gagal: $errorMessage'),
+                    content: Text('Failed: $errorMessage'),
                     backgroundColor: AppColors.red,
                   ),
                 );
@@ -274,8 +288,7 @@ class _SubmitButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           padding: EdgeInsets.all(AppSpacing.md),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text('Submit', style: TextStyle(color: AppColors.white)),
       ),
@@ -320,6 +333,7 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
     _reasonController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -333,24 +347,26 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDateField(
-            label: 'Tanggal Pengambilan',
+            label: 'Pickup Date',
             date: widget.pickupDate,
             onTap: () => widget.onDateSelected(context, true),
           ),
           const SizedBox(height: 12),
           _buildDateField(
-            label: 'Tanggal Pengembalian',
+            label: 'Return Date',
             date: widget.returnDate,
             onTap: () => widget.onDateSelected(context, false),
           ),
           const SizedBox(height: 12),
-          Text('Alasan', style: TextStyle(color: AppColors.gray, fontSize: 14)),
+          Text('Reason', style: TextStyle(color: AppColors.gray, fontSize: 14)),
           const SizedBox(height: 4),
           TextField(
             style: TextStyle(color: AppColors.white),
             decoration: InputDecoration(
-              hintText: 'Masukkan alasan peminjaman',
-              hintStyle: TextStyle(color: AppColors.gray.withOpacity(0.6)),
+              hintText: 'Enter loan reason',
+              hintStyle: TextStyle(
+                color: AppColors.gray.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: AppColors.background,
               border: OutlineInputBorder(
@@ -390,8 +406,10 @@ class _DateAndReasonFieldsState extends State<_DateAndReasonFields> {
             child: TextField(
               style: TextStyle(color: AppColors.white),
               decoration: InputDecoration(
-                hintText: 'Pilih tanggal',
-                hintStyle: TextStyle(color: AppColors.gray.withOpacity(0.6)),
+                hintText: 'Select date',
+                hintStyle: TextStyle(
+                  color: AppColors.gray.withValues(alpha: 0.6),
+                ),
                 filled: true,
                 fillColor: AppColors.background,
                 border: OutlineInputBorder(

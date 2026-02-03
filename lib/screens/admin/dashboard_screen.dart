@@ -22,7 +22,7 @@ class AdminDashboardScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
-      drawer: const CustomSidebar(),
+      drawer: CustomSidebar(),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         child: ListView(

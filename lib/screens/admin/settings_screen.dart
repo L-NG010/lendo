@@ -19,7 +19,7 @@ class SettingsScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
-      drawer: const CustomSidebar(),
+      drawer: CustomSidebar(),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(

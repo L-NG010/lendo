@@ -4,17 +4,32 @@ import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/providers/loan_provider.dart';
 import 'package:lendo/providers/officer/request_provider.dart';
-import 'package:lendo/widgets/officer_sidebar.dart';
+import 'package:lendo/widgets/sidebar.dart';
 
-class OfficerRequestScreen extends ConsumerWidget {
+class OfficerRequestScreen extends ConsumerStatefulWidget {
   const OfficerRequestScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OfficerRequestScreen> createState() =>
+      _OfficerRequestScreenState();
+}
+
+class _OfficerRequestScreenState extends ConsumerState<OfficerRequestScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh loans data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(loansProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final allLoansAsync = ref.watch(loansProvider);
 
     return Scaffold(
-      drawer: const OfficerSidebar(),
+      drawer: CustomSidebar(),
       appBar: AppBar(
         title: const Text('Requests'),
         backgroundColor: Colors.transparent,
@@ -49,12 +64,44 @@ class OfficerRequestScreen extends ConsumerWidget {
                     );
                   }
 
-                  return ListView.builder(
-                    itemCount: pendingLoans.length,
-                    itemBuilder: (context, index) {
-                      final loan = pendingLoans[index];
-                      return _buildLoanCard(context, ref, loan);
+                  // Check for arguments
+                  final args =
+                      ModalRoute.of(context)?.settings.arguments
+                          as Map<String, dynamic>?;
+                  final highlightId = args?['highlightLoanId']?.toString();
+
+                  if (highlightId != null) {
+                    // Move highlighted loan to top
+                    final index = pendingLoans.indexWhere(
+                      (l) => l.id == highlightId,
+                    );
+                    if (index != -1) {
+                      final loan = pendingLoans.removeAt(index);
+                      pendingLoans.insert(0, loan);
+                    }
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(loansProvider);
+                      await ref.read(loansProvider.future);
                     },
+                    child: ListView.builder(
+                      itemCount: pendingLoans.length,
+                      itemBuilder: (context, index) {
+                        final loan = pendingLoans[index];
+                        // Auto-expand if it matches highlightId and it's the first item (since we moved it there)
+                        final isHighlighted =
+                            highlightId != null && loan.id == highlightId;
+
+                        return _buildLoanCard(
+                          context,
+                          ref,
+                          loan,
+                          initiallyExpanded: isHighlighted,
+                        );
+                      },
+                    ),
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -82,7 +129,12 @@ class OfficerRequestScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoanCard(BuildContext context, WidgetRef ref, LoanModel loan) {
+  Widget _buildLoanCard(
+    BuildContext context,
+    WidgetRef ref,
+    LoanModel loan, {
+    bool initiallyExpanded = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
@@ -91,6 +143,7 @@ class OfficerRequestScreen extends ConsumerWidget {
         border: Border.all(color: AppColors.outline),
       ),
       child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
         title: Row(
           children: [
             Expanded(
@@ -402,7 +455,9 @@ class OfficerRequestScreen extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(approved ? 'Approved Successfully' : 'Rejected Successfully'),
+          title: Text(
+            approved ? 'Approved Successfully' : 'Rejected Successfully',
+          ),
           content: Text(
             'Request has been ${approved ? 'approved' : 'rejected'}.',
           ),

@@ -23,17 +23,6 @@ class _BorrowerOwnSubmissionsScreenState
     super.initState();
     _authService = ref.read(authServicePod);
     _loanService = ref.read(loanServiceProvider);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ModalRoute.of(context)?.settings.arguments == 'loan_success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Peminjaman berhasil diajukan!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      }
-    });
   }
 
   Future<List<Map<String, dynamic>>> _fetchUserLoans() async {

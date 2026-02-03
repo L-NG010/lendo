@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../services/auth_service.dart';
-import '../auth/login.dart';
-import 'package:lendo/widgets/officer_sidebar.dart';
+import 'package:lendo/widgets/sidebar.dart';
 import '../../providers/user_provider.dart';
 import '../../models/user_model.dart';
 
@@ -23,7 +22,7 @@ class OfficerProfileScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: AppColors.white,
       ),
-      drawer: const OfficerSidebar(),
+      drawer: CustomSidebar(),
       body: currentUserAsync.when(
         data: (user) {
           return SingleChildScrollView(
@@ -33,35 +32,37 @@ class OfficerProfileScreen extends ConsumerWidget {
               children: [
                 // Profile Card Section
                 _buildProfileCard(user, supabaseUser),
-                
+
                 const SizedBox(height: AppSpacing.lg),
-                
+
                 // Personal Information Section
                 _buildPersonalInformationSection(user),
-                
+
                 const SizedBox(height: AppSpacing.lg),
-                
-                // Logout Button
-                _buildLogoutButton(context, authService),
               ],
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error loading profile: \$error')),
+        error: (error, stack) =>
+            Center(child: Text('Error loading profile: \$error')),
       ),
     );
   }
 
   Widget _buildProfileCard(UserModel? user, dynamic supabaseUser) {
-    String displayName = user != null && user.rawUserMetadata['name'] != null 
-        ? user.rawUserMetadata['name'] 
-        : (supabaseUser != null ? supabaseUser.email?.split('@')[0] ?? 'Officer' : 'Officer');
-    String role = user != null && user.rawUserMetadata['role'] != null 
-        ? user.rawUserMetadata['role'] 
-        : (supabaseUser != null && supabaseUser.userMetadata != null && supabaseUser.userMetadata?['role'] != null 
-            ? supabaseUser.userMetadata!['role'] 
-            : 'officer');
+    String displayName = user != null && user.rawUserMetadata['name'] != null
+        ? user.rawUserMetadata['name']
+        : (supabaseUser != null
+              ? supabaseUser.email?.split('@')[0] ?? 'Officer'
+              : 'Officer');
+    String role = user != null && user.rawUserMetadata['role'] != null
+        ? user.rawUserMetadata['role']
+        : (supabaseUser != null &&
+                  supabaseUser.userMetadata != null &&
+                  supabaseUser.userMetadata?['role'] != null
+              ? supabaseUser.userMetadata!['role']
+              : 'officer');
 
     return Container(
       decoration: BoxDecoration(
@@ -90,11 +91,7 @@ class OfficerProfileScreen extends ConsumerWidget {
                 width: 2,
               ),
             ),
-            child: const Icon(
-              Icons.person,
-              size: 40,
-              color: AppColors.white,
-            ),
+            child: const Icon(Icons.person, size: 40, color: AppColors.white),
           ),
           const SizedBox(width: AppSpacing.md),
           // Name and Role
@@ -144,12 +141,8 @@ class OfficerProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildPersonalInformationSection(UserModel? user) {
-    String email = user != null
-        ? user.email 
-        : 'officer@example.com';
-    String phone = user != null && user.phone!.isNotEmpty
-        ? user.phone!
-        : '-';
+    String email = user != null ? user.email : 'officer@example.com';
+    String phone = user != null && user.phone!.isNotEmpty ? user.phone! : '-';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,81 +191,6 @@ class OfficerProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context, AuthService authService) {
-    return GestureDetector(
-      onTap: () async {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: AppColors.secondary,
-            title: const Text('Logout Confirmation', style: TextStyle(color: AppColors.white)),
-            content: const Text('Are you sure you want to logout?', style: TextStyle(color: AppColors.white)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel', style: TextStyle(color: AppColors.gray)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Yes', style: TextStyle(color: AppColors.primary)),
-              ),
-            ],
-          ),
-        );
-        
-        if (confirm == true) {
-          await authService.signOut();
-          if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          }
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.red,
-            width: 1,
-          ),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.white.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                Icons.logout,
-                size: 20,
-                color: AppColors.white,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            const Expanded(
-              child: Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildInfoRow({
     required IconData icon,
     required String label,
@@ -291,11 +209,7 @@ class OfficerProfileScreen extends ConsumerWidget {
               width: 1,
             ),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: AppColors.primary,
-          ),
+          child: Icon(icon, size: 20, color: AppColors.primary),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
