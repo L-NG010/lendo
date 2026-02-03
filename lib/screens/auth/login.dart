@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lendo/widgets/snackbar.dart';
 import '../../services/auth_service.dart';
 import 'package:lendo/config/app_config.dart';
 
@@ -153,9 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     
                     if (state.errorMessage != null) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(state.errorMessage!),backgroundColor: AppColors.red,),
-                        );
+                        CustomSnackBar.show(context, state.errorMessage!, isError: true);
                       }
                     } else {
                       await Future.delayed(const Duration(milliseconds: 500));
@@ -176,9 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         default:
                           // Jika role tidak dikenal, tetap di login
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Role tidak dikenal')),
-                            );
+                            CustomSnackBar.show(context, 'Role tidak dikenal', isError: true);
                           }
                           return;
                       }

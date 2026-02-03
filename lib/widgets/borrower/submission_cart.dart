@@ -116,14 +116,6 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
               return;
             }
 
-            // Skip reason validation since it's optional in the function
-            // if (reason.trim().isEmpty) {
-            //   ScaffoldMessenger.of(context).showSnackBar(
-            //     const SnackBar(content: Text('Alasan harus diisi!')),
-            //   );
-            //   return;
-            // }
-
             if (widget.cartItems.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Keranjang kosong!')),
@@ -134,16 +126,10 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
             final loanService = ref.read(loanServiceProvider);
             final assetService = ref.read(assetStockServiceProvider);
 
-            print('=== SUBMISSION PROCESS START ===');
             
             try {
-              print('Step 1: Getting asset IDs from cart items...');
-              // Get actual available asset IDs
               var assetIds = await assetService.getAssetIdsForCartItems(widget.cartItems);
-              print('Step 1 COMPLETE: Got asset IDs: $assetIds');
               
-              print('Step 2: Booking the loan...');
-              // Book the loan
               await loanService.addLoan(
                 userId: currentUser!.id,
                 loanDate: pickupDate!,
@@ -151,11 +137,7 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
                 reason: reason,
                 assetIds: assetIds,
               );
-              print('Step 2 COMPLETE: Loan booked successfully');
 
-              // Instead of using context which might cause issues,
-              // navigate to own submissions directly
-              print('Navigating to own submissions...');
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/borrower/own-submissions',
@@ -163,15 +145,9 @@ class _SubmissionCartState extends ConsumerState<SubmissionCart> {
                 arguments: 'loan_success',
               );
               
-              // The snackbar will be shown on the new screen
               print('Navigation completed');
-            } catch (e, stackTrace) {
-              // Print error for debugging
-              // print('Error in loan submission: $e');
-              // print('Stack trace: $stackTrace');
-              
+            } catch (e) { 
               if (mounted) {
-                // Show a more user-friendly error message
                 String errorMessage = e.toString();
                 if (errorMessage.contains('tidak tersedia') || errorMessage.contains('sudah dipinjam')) {
                   errorMessage = 'Asset tidak tersedia atau sudah dipinjam. Silakan refresh halaman.';

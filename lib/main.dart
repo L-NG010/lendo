@@ -18,7 +18,7 @@ import 'package:lendo/screens/borrower/submission_screen.dart';
 import 'package:lendo/screens/borrower/profile_screen.dart';
 import 'package:lendo/screens/borrower/return_screen.dart';
 import 'package:lendo/screens/borrower/history_screen.dart';
-import 'package:lendo/screens/borrower/submissions_screen.dart';
+import 'package:lendo/screens/borrower/own_submissions_screen.dart';
 import 'package:lendo/screens/officer/request_screen.dart';
 import 'package:lendo/screens/officer/return_screen.dart';
 import 'package:lendo/screens/officer/profile_screen.dart';
