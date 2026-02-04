@@ -31,7 +31,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
     required String code,
     required String status,
     String? pictureUrl,
-    String? price,
+    num? price,
   }) async {
     try {
       final assetService = ref.read(assetServiceProvider);
@@ -43,7 +43,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
         pictureUrl: pictureUrl,
         price: price,
       );
-      
+
       // Update state with new asset
       state.whenData((assets) {
         state = AsyncData([...assets, newAsset]);
@@ -62,7 +62,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
     String? code,
     String? status,
     String? pictureUrl,
-    String? price,
+    num? price,
   }) async {
     try {
       final assetService = ref.read(assetServiceProvider);
@@ -75,7 +75,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
         pictureUrl: pictureUrl,
         price: price,
       );
-      
+
       // Update state with modified asset
       state.whenData((assets) {
         final index = assets.indexWhere((asset) => asset.id == id);
@@ -95,7 +95,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
     try {
       final assetService = ref.read(assetServiceProvider);
       await assetService.deleteAsset(id);
-      
+
       // Remove asset from state
       state.whenData((assets) {
         state = AsyncData(assets.where((asset) => asset.id != id).toList());
@@ -111,7 +111,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
       refresh();
       return;
     }
-    
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final assetService = ref.read(assetServiceProvider);
@@ -125,7 +125,7 @@ class AssetsNotifier extends AsyncNotifier<List<Asset>> {
       refresh();
       return;
     }
-    
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final assetService = ref.read(assetServiceProvider);
@@ -143,16 +143,10 @@ final assetsProvider = AsyncNotifierProvider<AssetsNotifier, List<Asset>>(() {
 class FilterState {
   final String selectedCategory;
   final String searchQuery;
-  
-  FilterState({
-    this.selectedCategory = 'All',
-    this.searchQuery = '',
-  });
-  
-  FilterState copyWith({
-    String? selectedCategory,
-    String? searchQuery,
-  }) {
+
+  FilterState({this.selectedCategory = 'All', this.searchQuery = ''});
+
+  FilterState copyWith({String? selectedCategory, String? searchQuery}) {
     return FilterState(
       selectedCategory: selectedCategory ?? this.selectedCategory,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -165,44 +159,55 @@ class FilterNotifier extends Notifier<FilterState> {
   FilterState build() {
     return FilterState();
   }
-  
+
   void setSelectedCategory(String category) {
     state = state.copyWith(selectedCategory: category);
   }
-  
+
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
   }
-  
+
   void reset() {
     state = FilterState();
   }
 }
 
 // Filter notifier provider
-final filterProvider = NotifierProvider<FilterNotifier, FilterState>(FilterNotifier.new);
+final filterProvider = NotifierProvider<FilterNotifier, FilterState>(
+  FilterNotifier.new,
+);
 
 // Filtered assets provider
 final filteredAssetsProvider = Provider<List<Asset>>((ref) {
   final assetsAsync = ref.watch(assetsProvider);
   final filterState = ref.watch(filterProvider);
-  
+
   return assetsAsync.when(
     data: (assets) {
       // Apply category filter
       List<Asset> filtered = assets;
       if (filterState.selectedCategory != 'All') {
-        filtered = assets.where((asset) => asset.category == filterState.selectedCategory).toList();
+        filtered = assets
+            .where((asset) => asset.category == filterState.selectedCategory)
+            .toList();
       }
-      
+
       // Apply search filter
       if (filterState.searchQuery.isNotEmpty) {
-        filtered = filtered.where((asset) => 
-          asset.name.toLowerCase().contains(filterState.searchQuery.toLowerCase()) ||
-          asset.code.toLowerCase().contains(filterState.searchQuery.toLowerCase())
-        ).toList();
+        filtered = filtered
+            .where(
+              (asset) =>
+                  asset.name.toLowerCase().contains(
+                    filterState.searchQuery.toLowerCase(),
+                  ) ||
+                  asset.code.toLowerCase().contains(
+                    filterState.searchQuery.toLowerCase(),
+                  ),
+            )
+            .toList();
       }
-      
+
       return filtered;
     },
     loading: () => [],

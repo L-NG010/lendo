@@ -17,11 +17,13 @@ class CategoryService {
           .from('categories')
           .select('*')
           .order('id', ascending: true);
-      
+
       return response.map((data) {
         final category = data as Map<String, dynamic>;
         return CategoryModel(
-          id: category['id'].toString(),
+          id: category['id'] is int
+              ? category['id']
+              : int.parse(category['id'].toString()),
           name: category['name'] as String,
         );
       }).toList();
@@ -31,17 +33,19 @@ class CategoryService {
   }
 
   // Get category by ID
-  Future<CategoryModel?> getCategoryById(String id) async {
+  Future<CategoryModel?> getCategoryById(int id) async {
     try {
       final response = await _supabase
           .from('categories')
           .select('*')
           .eq('id', id)
           .single();
-      
+
       final category = response as Map<String, dynamic>;
       return CategoryModel(
-        id: category['id'].toString(),
+        id: category['id'] is int
+            ? category['id']
+            : int.parse(category['id'].toString()),
         name: category['name'] as String,
       );
     } catch (e) {
@@ -57,10 +61,12 @@ class CategoryService {
           .insert({'name': name})
           .select()
           .single();
-      
+
       final category = response as Map<String, dynamic>;
       return CategoryModel(
-        id: category['id'].toString(),
+        id: category['id'] is int
+            ? category['id']
+            : int.parse(category['id'].toString()),
         name: category['name'] as String,
       );
     } catch (e) {
@@ -69,7 +75,7 @@ class CategoryService {
   }
 
   // Update category
-  Future<CategoryModel> updateCategory(String id, String name) async {
+  Future<CategoryModel> updateCategory(int id, String name) async {
     try {
       final response = await _supabase
           .from('categories')
@@ -77,10 +83,12 @@ class CategoryService {
           .eq('id', id)
           .select()
           .single();
-      
+
       final category = response as Map<String, dynamic>;
       return CategoryModel(
-        id: category['id'].toString(),
+        id: category['id'] is int
+            ? category['id']
+            : int.parse(category['id'].toString()),
         name: category['name'] as String,
       );
     } catch (e) {
@@ -89,12 +97,9 @@ class CategoryService {
   }
 
   // Delete category
-  Future<void> deleteCategory(String id) async {
+  Future<void> deleteCategory(int id) async {
     try {
-      await _supabase
-          .from('categories')
-          .delete()
-          .eq('id', id);
+      await _supabase.from('categories').delete().eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete category: $e');
     }

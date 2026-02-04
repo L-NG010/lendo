@@ -29,7 +29,7 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
     try {
       final categoryService = ref.read(categoryServiceProvider);
       final newCategory = await categoryService.createCategory(name);
-      
+
       // Update state with new category
       state.whenData((categories) {
         state = AsyncData([...categories, newCategory]);
@@ -41,14 +41,16 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
   }
 
   // Update existing category
-  Future<void> updateCategory(String id, String name) async {
+  Future<void> updateCategory(int id, String name) async {
     try {
       final categoryService = ref.read(categoryServiceProvider);
       final updatedCategory = await categoryService.updateCategory(id, name);
-      
+
       // Update state with updated category
       state.whenData((categories) {
-        final updatedList = categories.map((category) => category.id == id ? updatedCategory : category).toList();
+        final updatedList = categories
+            .map((category) => category.id == id ? updatedCategory : category)
+            .toList();
         state = AsyncData(updatedList);
       });
     } catch (e) {
@@ -58,14 +60,16 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
   }
 
   // Delete category
-  Future<void> deleteCategory(String id) async {
+  Future<void> deleteCategory(int id) async {
     try {
       final categoryService = ref.read(categoryServiceProvider);
       await categoryService.deleteCategory(id);
-      
+
       // Remove category from state
       state.whenData((categories) {
-        final updatedList = categories.where((category) => category.id != id).toList();
+        final updatedList = categories
+            .where((category) => category.id != id)
+            .toList();
         state = AsyncData(updatedList);
       });
     } catch (e) {
@@ -76,4 +80,7 @@ class CategoriesNotifier extends AsyncNotifier<List<CategoryModel>> {
 }
 
 // Provider for categories list
-final categoriesProvider = AsyncNotifierProvider<CategoriesNotifier, List<CategoryModel>>(CategoriesNotifier.new);
+final categoriesProvider =
+    AsyncNotifierProvider<CategoriesNotifier, List<CategoryModel>>(
+      CategoriesNotifier.new,
+    );

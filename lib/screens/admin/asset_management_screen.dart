@@ -7,6 +7,7 @@ import 'package:lendo/models/asset_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
 import 'package:lendo/widgets/asset_card.dart';
 import 'package:lendo/providers/asset_provider.dart';
+import 'package:lendo/providers/category_provider.dart';
 
 class AssetManagementScreen extends ConsumerWidget {
   const AssetManagementScreen({super.key});
@@ -17,7 +18,7 @@ class AssetManagementScreen extends ConsumerWidget {
     final assetsAsync = ref.watch(assetsProvider);
     final filterState = ref.watch(filterProvider);
     final filteredAssets = ref.watch(filteredAssetsProvider);
-    
+
     // Extract unique categories
     final categories = {'All'};
     assetsAsync.whenData((assets) {
@@ -53,7 +54,9 @@ class AssetManagementScreen extends ConsumerWidget {
                   flex: 2,
                   child: Container(
                     margin: const EdgeInsets.only(right: AppSpacing.sm),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(8),
@@ -75,25 +78,40 @@ class AssetManagementScreen extends ConsumerWidget {
                 // Category filter dropdown
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.outline),
                     ),
-                    child: DropdownButton<String>(
+                    child: DropdownButtonFormField<String>(
+                      dropdownColor: AppColors.secondary,
                       value: filterState.selectedCategory,
-                      underline: Container(),
                       isExpanded: true,
-                      hint: Text('Filter', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                       items: categories.map((String category) {
                         return DropdownMenuItem(
                           value: category,
-                          child: Text(category, style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                          child: Text(
+                            category,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 12,
+                            ),
+                          ),
                         );
                       }).toList(),
                       onChanged: (String? newValue) {
-                        ref.read(filterProvider.notifier).setSelectedCategory(newValue ?? 'All');
+                        ref
+                            .read(filterProvider.notifier)
+                            .setSelectedCategory(newValue ?? 'All');
                       },
                     ),
                   ),
@@ -109,20 +127,28 @@ class AssetManagementScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inventory_2_outlined, 
-                               size: 64, 
-                               color: AppColors.gray),
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: AppColors.gray,
+                          ),
                           const SizedBox(height: 16),
-                          Text('No assets found', 
-                               style: TextStyle(color: AppColors.gray)),
+                          Text(
+                            'No assets found',
+                            style: TextStyle(color: AppColors.gray),
+                          ),
                           const SizedBox(height: 8),
-                          Text('Try adjusting your search or filter', 
-                               style: TextStyle(color: AppColors.gray.withOpacity(0.7))),
+                          Text(
+                            'Try adjusting your search or filter',
+                            style: TextStyle(
+                              color: AppColors.gray.withOpacity(0.7),
+                            ),
+                          ),
                         ],
                       ),
                     );
                   }
-                  
+
                   return ListView.builder(
                     itemCount: filteredAssets.length,
                     itemBuilder: (context, index) {
@@ -132,7 +158,8 @@ class AssetManagementScreen extends ConsumerWidget {
                         child: AssetCard(
                           asset: asset,
                           onEdit: () => _showUpdateDialog(context, ref, asset),
-                          onDelete: () => _showDeleteDialog(context, ref, asset),
+                          onDelete: () =>
+                              _showDeleteDialog(context, ref, asset),
                         ),
                       );
                     },
@@ -143,15 +170,17 @@ class AssetManagementScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, 
-                           size: 64, 
-                           color: AppColors.red),
+                      Icon(Icons.error_outline, size: 64, color: AppColors.red),
                       const SizedBox(height: 16),
-                      Text('Error loading assets', 
-                           style: TextStyle(color: AppColors.red)),
+                      Text(
+                        'Error loading assets',
+                        style: TextStyle(color: AppColors.red),
+                      ),
                       const SizedBox(height: 8),
-                      Text(error.toString(), 
-                           style: TextStyle(color: AppColors.gray)),
+                      Text(
+                        error.toString(),
+                        style: TextStyle(color: AppColors.gray),
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => ref.refresh(assetsProvider),
@@ -169,146 +198,542 @@ class AssetManagementScreen extends ConsumerWidget {
   }
 
   void _showAddAssetDialog(BuildContext context, WidgetRef ref) {
-    // Controllers for form fields
+    final categoriesAsync = ref.watch(categoriesProvider);
     final nameController = TextEditingController();
     final codeController = TextEditingController();
-    final categoryController = TextEditingController();
-    final statusController = TextEditingController();
+    int? selectedCategory;
+    String selectedStatus = 'available';
     final priceController = TextEditingController();
-    
-    // For image upload - store the file locally until save
     File? selectedImage;
-    String? imageUrl;
-    
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppColors.secondary,
+              title: Text(
+                'Add New Asset',
+                style: TextStyle(color: AppColors.white),
+              ),
+              content: Container(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.outline,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            if (selectedImage != null)
+                              Image.file(
+                                selectedImage!,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              )
+                            else
+                              Icon(
+                                Icons.image_outlined,
+                                color: AppColors.gray,
+                                size: 30,
+                              ),
+                            Text(
+                              'Upload Image',
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 12,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                try {
+                                  final ImagePicker picker = ImagePicker();
+                                  final XFile? image = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (image != null) {
+                                    setState(() {
+                                      selectedImage = File(image.path);
+                                    });
+                                  }
+                                } catch (e) {
+                                  print('Error picking image: ' + e.toString());
+                                }
+                              },
+                              child: Text(
+                                'Choose File',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildTextField('Name:', nameController),
+                      _buildTextField('Code:', codeController),
+                      _buildDropdownField(
+                        label: 'Category:',
+                        child: categoriesAsync.when(
+                          data: (categories) {
+                            return DropdownButtonFormField<int>(
+                              value: selectedCategory,
+                              dropdownColor: AppColors.secondary,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.secondary,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: BorderSide(
+                                    color: AppColors.outline,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              style: TextStyle(color: AppColors.white),
+                              hint: Text(
+                                'Select category',
+                                style: TextStyle(color: AppColors.gray),
+                              ),
+                              items: categories.map((cat) {
+                                return DropdownMenuItem(
+                                  value: cat.id,
+                                  child: Text(
+                                    cat.name,
+                                    style: TextStyle(color: AppColors.white),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedCategory = value;
+                                });
+                              },
+                            );
+                          },
+                          loading: () => CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                          error: (_, __) => Text(
+                            'Error loading categories',
+                            style: TextStyle(color: AppColors.red),
+                          ),
+                        ),
+                      ),
+                      _buildDropdownField(
+                        label: 'Status:',
+                        child: DropdownButtonFormField<String>(
+                          value: selectedStatus,
+                          dropdownColor: AppColors.secondary,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.secondary,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: TextStyle(color: AppColors.white),
+                          items: ['available', 'borrowed', 'damaged', 'lost']
+                              .map((status) {
+                                return DropdownMenuItem(
+                                  value: status,
+                                  child: Text(
+                                    status[0].toUpperCase() +
+                                        status.substring(1),
+                                    style: TextStyle(color: AppColors.white),
+                                  ),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedStatus = value!;
+                            });
+                          },
+                        ),
+                      ),
+                      _buildTextField('Price:', priceController),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.gray),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (selectedCategory == null) {
+                      _showErrorMessage(context, 'Please select a category');
+                      return;
+                    }
+                    try {
+                      String? uploadedUrl;
+                      if (selectedImage != null) {
+                        final fileName =
+                            'asset_' +
+                            DateTime.now().millisecondsSinceEpoch.toString() +
+                            '.jpg';
+                        uploadedUrl = await ref
+                            .read(assetServiceProvider)
+                            .uploadImage(selectedImage!, fileName);
+                      }
+
+                      await ref
+                          .read(assetsProvider.notifier)
+                          .addAsset(
+                            name: nameController.text,
+                            code: codeController.text,
+                            category: selectedCategory!,
+                            status: selectedStatus,
+                            price: num.tryParse(priceController.text),
+                            pictureUrl: uploadedUrl,
+                          );
+                      Navigator.of(context).pop();
+                      _showSuccessMessage(context, 'Asset added successfully');
+                    } catch (e) {
+                      _showErrorMessage(
+                        context,
+                        'Failed to add asset: ${e.toString()}',
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Save',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showUpdateDialog(BuildContext context, WidgetRef ref, Asset asset) {
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final nameController = TextEditingController(text: asset.name);
+    final codeController = TextEditingController(text: asset.code);
+    int selectedCategory = asset.category;
+    String selectedStatus = asset.status;
+    final priceController = TextEditingController(
+      text: asset.price?.toString() ?? '',
+    );
+    File? selectedImage;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppColors.secondary,
+              title: Text(
+                'Update Asset',
+                style: TextStyle(color: AppColors.white),
+              ),
+              content: Container(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.outline,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            if (selectedImage != null)
+                              Image.file(
+                                selectedImage!,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              )
+                            else if (asset.pictureUrl != null)
+                              Image.network(
+                                asset.pictureUrl!,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              )
+                            else
+                              Icon(
+                                Icons.image_outlined,
+                                color: AppColors.gray,
+                                size: 30,
+                              ),
+                            Text(
+                              'Update Image',
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 12,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                try {
+                                  final ImagePicker picker = ImagePicker();
+                                  final XFile? image = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (image != null) {
+                                    setState(() {
+                                      selectedImage = File(image.path);
+                                    });
+                                  }
+                                } catch (e) {
+                                  print('Error picking image: ' + e.toString());
+                                }
+                              },
+                              child: Text(
+                                'Change Image',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildTextField('Name:', nameController),
+                      _buildTextField('Code:', codeController),
+                      _buildDropdownField(
+                        label: 'Category:',
+                        child: categoriesAsync.when(
+                          data: (categories) {
+                            return DropdownButtonFormField<int>(
+                              value: selectedCategory,
+                              dropdownColor: AppColors.secondary,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.secondary,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: BorderSide(
+                                    color: AppColors.outline,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              style: TextStyle(color: AppColors.white),
+                              hint: Text(
+                                'Select category',
+                                style: TextStyle(color: AppColors.gray),
+                              ),
+                              items: categories.map((cat) {
+                                return DropdownMenuItem(
+                                  value: cat.id,
+                                  child: Text(
+                                    cat.name,
+                                    style: TextStyle(color: AppColors.white),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedCategory = value!;
+                                });
+                              },
+                            );
+                          },
+                          loading: () => CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                          error: (_, __) => Text(
+                            'Error loading categories',
+                            style: TextStyle(color: AppColors.red),
+                          ),
+                        ),
+                      ),
+                      _buildDropdownField(
+                        label: 'Status:',
+                        child: DropdownButtonFormField<String>(
+                          value: selectedStatus,
+                          dropdownColor: AppColors.secondary,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.secondary,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: TextStyle(color: AppColors.white),
+                          items: ['available', 'borrowed', 'damaged', 'lost']
+                              .map((status) {
+                                return DropdownMenuItem(
+                                  value: status,
+                                  child: Text(
+                                    status[0].toUpperCase() +
+                                        status.substring(1),
+                                    style: TextStyle(color: AppColors.white),
+                                  ),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedStatus = value!;
+                            });
+                          },
+                        ),
+                      ),
+                      _buildTextField('Price:', priceController),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.gray),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      String? finalUrl = asset.pictureUrl;
+                      if (selectedImage != null) {
+                        final fileName =
+                            'asset_' +
+                            DateTime.now().millisecondsSinceEpoch.toString() +
+                            '.jpg';
+                        finalUrl = await ref
+                            .read(assetServiceProvider)
+                            .uploadImage(selectedImage!, fileName);
+                      }
+
+                      await ref
+                          .read(assetsProvider.notifier)
+                          .updateAsset(
+                            id: asset.id,
+                            name: nameController.text,
+                            code: codeController.text,
+                            category: selectedCategory,
+                            status: selectedStatus,
+                            price: num.tryParse(priceController.text),
+                            pictureUrl: finalUrl,
+                          );
+                      Navigator.of(context).pop();
+                      _showSuccessMessage(
+                        context,
+                        'Asset updated successfully',
+                      );
+                    } catch (e) {
+                      _showErrorMessage(
+                        context,
+                        'Failed to update asset: ${e.toString()}',
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Save',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, Asset asset) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: AppColors.secondary,
           title: Text(
-            'Add New Asset',
+            'Confirm Delete',
             style: TextStyle(color: AppColors.white),
           ),
-          content: Container(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Image upload section
-                  Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.outline, width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.image_outlined, color: AppColors.gray, size: 30),
-                        Text('Upload Image', style: TextStyle(color: AppColors.gray, fontSize: 12)),
-                        TextButton(
-                          onPressed: () async {
-                            try {
-                              final ImagePicker picker = ImagePicker();
-                              final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                              if (image != null) {
-                                selectedImage = File(image.path);
-                                print('Image selected: ' + image.path);
-                                // Don't upload yet - just store the file locally
-                                // Upload will happen when user clicks Save
-                              }
-                            } catch (e) {
-                              // Handle specific platform errors
-                              String errorMessage = e.toString();
-                              if (errorMessage.contains('channel-error') || errorMessage.contains('file_selector')) {
-                                errorMessage = 'Image selection not supported on this platform. Please use another device.';
-                              }
-                              print('Error picking image: ' + errorMessage);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Image selection failed: ' + errorMessage),
-                                    backgroundColor: AppColors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          child: Text('Choose File', style: TextStyle(color: AppColors.primary, fontSize: 12)), 
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildTextField('Name:', nameController),
-                  _buildTextField('Code:', codeController),
-                  _buildTextField('Category (ID):', categoryController),
-                  _buildTextField('Status:', statusController),
-                  _buildTextField('Price:', priceController),
-                ],
-              ),
-            ),
+          content: Text(
+            'Are you sure you want to delete asset "${asset.name}"?',
+            style: TextStyle(color: AppColors.white),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.gray),
-              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel', style: TextStyle(color: AppColors.gray)),
             ),
             TextButton(
-              onPressed: () async {
-                try {
-                  // Upload image first if one is selected
-                  if (selectedImage != null) {
-                    final assetService = ref.read(assetServiceProvider);
-                    final fileName = 'asset_' + DateTime.now().millisecondsSinceEpoch.toString() + '_' + nameController.text.replaceAll(' ', '_').toLowerCase() + '.jpg';
-                    imageUrl = await assetService.uploadImage(selectedImage!, fileName);
-                    print('Image uploaded successfully: ' + imageUrl!);
-                  }
-                  
-                  final assetsNotifier = ref.read(assetsProvider.notifier);
-                  await assetsNotifier.addAsset(
-                    name: nameController.text,
-                    category: int.tryParse(categoryController.text) ?? 0,
-                    code: codeController.text,
-                    status: statusController.text,
-                    pictureUrl: imageUrl,
-                    price: priceController.text.isEmpty ? null : priceController.text,
-                  );
-                  
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Asset added successfully'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to add asset: \$e'),
-                        backgroundColor: AppColors.red,
-                      ),
-                    );
-                  }
-                }
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteAsset(context, ref, asset);
               },
-              child: Text(
-                'Save',
-                style: TextStyle(color: AppColors.primary),
-              ),
+              child: Text('Delete', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
       },
+    );
+  }
+
+  void _deleteAsset(BuildContext context, WidgetRef ref, Asset asset) async {
+    try {
+      await ref.read(assetsProvider.notifier).deleteAsset(asset.id);
+      _showSuccessMessage(
+        context,
+        'Asset "${asset.name}" deleted successfully',
+      );
+    } catch (e) {
+      _showErrorMessage(context, 'Failed to delete asset: ${e.toString()}');
+    }
+  }
+
+  void _showSuccessMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.primary),
+    );
+  }
+
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.red),
     );
   }
 
@@ -332,10 +757,7 @@ class AssetManagementScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: AppColors.outline,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.outline, width: 1),
             ),
             child: TextField(
               controller: controller,
@@ -352,214 +774,24 @@ class AssetManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showUpdateDialog(BuildContext context, WidgetRef ref, Asset asset) {
-    // Controllers for form fields with initial values
-    final nameController = TextEditingController(text: asset.name);
-    final codeController = TextEditingController(text: asset.code);
-    final categoryController = TextEditingController(text: asset.category.toString());
-    final statusController = TextEditingController(text: asset.status);
-    final priceController = TextEditingController(text: asset.price?.toString() ?? '');
-    
-    // For image upload
-    File? selectedImage;
-    String? imageUrl;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppColors.secondary,
-          title: Text(
-            'Update Asset',
-            style: TextStyle(color: AppColors.white),
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Image upload section
-                  Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.outline, width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.image_outlined, color: AppColors.gray, size: 30),
-                        Text('Current Image', style: TextStyle(color: AppColors.gray, fontSize: 12)),
-                        TextButton(
-                          onPressed: () async {
-                            try {
-                              final ImagePicker picker = ImagePicker();
-                              final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                              if (image != null) {
-                                selectedImage = File(image.path);
-                                print('Image selected: ' + image.path);
-                                // Don't upload yet - just store the file locally
-                                // Upload will happen when user clicks Save
-                              }
-                            } catch (e) {
-                              // Handle specific platform errors
-                              String errorMessage = e.toString();
-                              if (errorMessage.contains('channel-error') || errorMessage.contains('file_selector')) {
-                                errorMessage = 'Image selection not supported on this platform. Please use another device.';
-                              }
-                              print('Error picking image: ' + errorMessage);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Image selection failed: ' + errorMessage),
-                                    backgroundColor: AppColors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          child: Text('Change Image', style: TextStyle(color: AppColors.primary, fontSize: 12)), 
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildTextField('Name:', nameController),
-                  _buildTextField('Code:', codeController),
-                  _buildTextField('Category (ID):', categoryController),
-                  _buildTextField('Status:', statusController),
-                  _buildTextField('Price:', priceController),
-                ],
-              ),
+  Widget _buildDropdownField({required String label, required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray,
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.gray),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  // Upload image first if one is selected
-                  if (selectedImage != null) {
-                    final assetService = ref.read(assetServiceProvider);
-                    final fileName = 'asset_' + DateTime.now().millisecondsSinceEpoch.toString() + '_' + nameController.text.replaceAll(' ', '_').toLowerCase() + '.jpg';
-                    imageUrl = await assetService.uploadImage(selectedImage!, fileName);
-                    print('Image uploaded successfully: ' + imageUrl!);
-                  }
-                  
-                  final assetsNotifier = ref.read(assetsProvider.notifier);
-                  await assetsNotifier.updateAsset(
-                    id: asset.id,
-                    name: nameController.text,
-                    category: int.tryParse(categoryController.text),
-                    code: codeController.text,
-                    status: statusController.text,
-                    pictureUrl: imageUrl, // Use new image URL if provided
-                    price: priceController.text.isEmpty ? null : priceController.text,
-                  );
-                  
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Asset "\${asset.name}" updated successfully'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to update asset: \$e'),
-                        backgroundColor: AppColors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: Text(
-                'Save',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
-        );
-      },
+          const SizedBox(height: 4),
+          child,
+        ],
+      ),
     );
-  }
-
-  void _showDeleteDialog(BuildContext context, WidgetRef ref, Asset asset) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppColors.secondary,
-          title: Text(
-            'Confirm Delete',
-            style: TextStyle(color: AppColors.white),
-          ),
-          content: Text(
-            'Are you sure you want to delete asset "' + asset.name + '"?',
-            style: TextStyle(color: AppColors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog (cancel)
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.gray),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Perform delete action
-                Navigator.of(context).pop(); // Close dialog
-                _deleteAsset(context, ref, asset);
-              },
-              child: Text(
-                'Delete',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _deleteAsset(BuildContext context, WidgetRef ref, Asset asset) async {
-    try {
-      final assetsNotifier = ref.read(assetsProvider.notifier);
-      await assetsNotifier.deleteAsset(asset.id);
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Asset "${asset.name}" deleted successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete asset: ${e.toString()}'),
-            backgroundColor: AppColors.red,
-          ),
-        );
-      }
-    }
   }
 }

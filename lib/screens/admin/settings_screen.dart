@@ -11,7 +11,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final penaltyRulesAsync = ref.watch(penaltyRulesProvider);
-      
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(color: AppColors.white)),
@@ -34,7 +34,11 @@ class SettingsScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.warning_amber_outlined, size: 48, color: AppColors.gray),
+                          Icon(
+                            Icons.warning_amber_outlined,
+                            size: 48,
+                            color: AppColors.gray,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'No penalty rules configured',
@@ -53,7 +57,9 @@ class SettingsScreen extends ConsumerWidget {
                   }
                   return _buildPenaltyCardsGrid(rules.first, context, ref);
                 },
-                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
                 error: (error, stack) => Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -75,102 +81,121 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildPenaltyCardsGrid(
+    PenaltyRule rule,
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final latePerDayController = TextEditingController(
+      text: rule.rules.latePerDay.toString(),
+    );
+    final minorController = TextEditingController(
+      text: rule.rules.damage.minor.toString(),
+    );
+    final moderateController = TextEditingController(
+      text: rule.rules.damage.moderate.toString(),
+    );
+    final majorController = TextEditingController(
+      text: rule.rules.damage.major.toString(),
+    );
+    final lostController = TextEditingController(
+      text: rule.rules.damage.lost.toString(),
+    );
 
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Damage Penalties Card
+          _buildModernCard(
+            title: 'Damage Penalties',
+            icon: Icons.dangerous_rounded,
+            children: [
+              _buildPenaltyInputCard(
+                icon: Icons.search_off_rounded,
+                label: 'Lost Item',
+                value: rule.rules.damage.lost.toString(),
+                color: AppColors.secondary.withOpacity(0.15),
+                iconColor: AppColors.primary,
+                onChanged: (value) {
+                  // Controller is already linked to the text field
+                },
+                controller: lostController,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildPenaltyInputCard(
+                icon: Icons.warning_amber_rounded,
+                label: 'Major Damage',
+                value: rule.rules.damage.major.toString(),
+                color: AppColors.secondary.withOpacity(0.15),
+                iconColor: AppColors.primary,
+                onChanged: (value) {
+                  // Controller is already linked to the text field
+                },
+                controller: majorController,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildPenaltyInputCard(
+                icon: Icons.report_problem_rounded,
+                label: 'Moderate Damage',
+                value: rule.rules.damage.moderate.toString(),
+                color: AppColors.secondary.withOpacity(0.15),
+                iconColor: AppColors.primary,
+                onChanged: (value) {
+                  // Controller is already linked to the text field
+                },
+                controller: moderateController,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildPenaltyInputCard(
+                icon: Icons.flag_rounded,
+                label: 'Minor Damage',
+                value: rule.rules.damage.minor.toString(),
+                color: AppColors.secondary.withOpacity(0.15),
+                iconColor: AppColors.primary,
+                onChanged: (value) {
+                  // Controller is already linked to the text field
+                },
+                controller: minorController,
+              ),
+            ],
+          ),
 
-  Widget _buildPenaltyCardsGrid(PenaltyRule rule, BuildContext context, WidgetRef ref) {
-    final latePerDayController = TextEditingController(text: rule.rules.latePerDay.toString());
-    final minorController = TextEditingController(text: rule.rules.damage.minor.toString());
-    final moderateController = TextEditingController(text: rule.rules.damage.moderate.toString());
-    final majorController = TextEditingController(text: rule.rules.damage.major.toString());
-    final lostController = TextEditingController(text: rule.rules.damage.lost.toString());
-    
-    return Expanded(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Damage Penalties Card
-            _buildModernCard(
-              title: 'Damage Penalties',
-              icon: Icons.dangerous_rounded,
-              children: [
-                _buildPenaltyInputCard(
-                  icon: Icons.search_off_rounded,
-                  label: 'Lost Item',
-                  value: rule.rules.damage.lost.toString(),
-                  color: AppColors.secondary.withOpacity(0.15),
-                  iconColor: AppColors.primary,
-                  onChanged: (value) {
-                    // Controller is already linked to the text field
-                  },
-                  controller: lostController,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _buildPenaltyInputCard(
-                  icon: Icons.warning_amber_rounded,
-                  label: 'Major Damage',
-                  value: rule.rules.damage.major.toString(),
-                  color: AppColors.secondary.withOpacity(0.15),
-                  iconColor: AppColors.primary,
-                  onChanged: (value) {
-                    // Controller is already linked to the text field
-                  },
-                  controller: majorController,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _buildPenaltyInputCard(
-                  icon: Icons.report_problem_rounded,
-                  label: 'Moderate Damage',
-                  value: rule.rules.damage.moderate.toString(),
-                  color: AppColors.secondary.withOpacity(0.15),
-                  iconColor: AppColors.primary,
-                  onChanged: (value) {
-                    // Controller is already linked to the text field
-                  },
-                  controller: moderateController,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _buildPenaltyInputCard(
-                  icon: Icons.flag_rounded,
-                  label: 'Minor Damage',
-                  value: rule.rules.damage.minor.toString(),
-                  color: AppColors.secondary.withOpacity(0.15),
-                  iconColor: AppColors.primary,
-                  onChanged: (value) {
-                    // Controller is already linked to the text field
-                  },
-                  controller: minorController,
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Late Return Penalties Card
-            _buildModernCard(
-              title: 'Late Return Penalties',
-              icon: Icons.timer_rounded,
-              children: [
-                _buildPenaltyInputCard(
-                  icon: Icons.access_time_filled_rounded,
-                  label: 'Per Day Late Fee',
-                  value: rule.rules.latePerDay.toString(),
-                  suffixText: 'Rp',
-                  color: AppColors.secondary.withOpacity(0.15),
-                  iconColor: AppColors.primary,
-                  onChanged: (value) {
-                    // Controller is already linked to the text field
-                  },
-                  controller: latePerDayController,
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Save Button
-            _buildSaveButton(context, ref, rule.id, latePerDayController, minorController, moderateController, majorController, lostController),
-          ],
-        ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Late Return Penalties Card
+          _buildModernCard(
+            title: 'Late Return Penalties',
+            icon: Icons.timer_rounded,
+            children: [
+              _buildPenaltyInputCard(
+                icon: Icons.access_time_filled_rounded,
+                label: 'Per Day Late Fee',
+                value: rule.rules.latePerDay.toString(),
+                suffixText: 'Rp',
+                color: AppColors.secondary.withOpacity(0.15),
+                iconColor: AppColors.primary,
+                onChanged: (value) {
+                  // Controller is already linked to the text field
+                },
+                controller: latePerDayController,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // Save Button
+          _buildSaveButton(
+            context,
+            ref,
+            rule.id,
+            latePerDayController,
+            minorController,
+            moderateController,
+            majorController,
+            lostController,
+          ),
+        ],
       ),
     );
   }
@@ -199,11 +224,7 @@ class SettingsScreen extends ConsumerWidget {
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
+                child: Icon(icon, size: 20, color: AppColors.primary),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
@@ -247,11 +268,7 @@ class SettingsScreen extends ConsumerWidget {
               color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: iconColor,
-            ),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -322,7 +339,16 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSaveButton(BuildContext context, WidgetRef ref, String ruleId, TextEditingController latePerDayController, TextEditingController minorController, TextEditingController moderateController, TextEditingController majorController, TextEditingController lostController) {
+  Widget _buildSaveButton(
+    BuildContext context,
+    WidgetRef ref,
+    String ruleId,
+    TextEditingController latePerDayController,
+    TextEditingController minorController,
+    TextEditingController moderateController,
+    TextEditingController majorController,
+    TextEditingController lostController,
+  ) {
     return Container(
       width: double.infinity,
       child: ElevatedButton(
@@ -334,14 +360,16 @@ class SettingsScreen extends ConsumerWidget {
               minor: int.tryParse(minorController.text) ?? 8,
               moderate: int.tryParse(moderateController.text) ?? 15,
             );
-            
+
             final penaltyRules = PenaltyRules(
               damage: damageRules,
               latePerDay: int.tryParse(latePerDayController.text) ?? 5000,
             );
-            
-            await ref.read(penaltyRulesProvider.notifier).updatePenaltyRule(ruleId, penaltyRules);
-            
+
+            await ref
+                .read(penaltyRulesProvider.notifier)
+                .updatePenaltyRule(ruleId, penaltyRules);
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Penalty settings saved successfully'),
@@ -364,28 +392,23 @@ class SettingsScreen extends ConsumerWidget {
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           'Save Settings',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
       ),
     );
   }
-  
+
   void _showAddPenaltyRuleDialog(BuildContext context, WidgetRef ref) {
     final latePerDayController = TextEditingController(text: '5000');
     final minorController = TextEditingController(text: '8');
     final moderateController = TextEditingController(text: '15');
     final majorController = TextEditingController(text: '20');
     final lostController = TextEditingController(text: '100');
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -400,7 +423,10 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildInputField('Late Fee Per Day (Rp):', latePerDayController),
+                _buildInputField(
+                  'Late Fee Per Day (Rp):',
+                  latePerDayController,
+                ),
                 _buildInputField('Minor Damage (%):', minorController),
                 _buildInputField('Moderate Damage (%):', moderateController),
                 _buildInputField('Major Damage (%):', majorController),
@@ -413,14 +439,11 @@ class SettingsScreen extends ConsumerWidget {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.gray),
-              ),
+              child: Text('Cancel', style: TextStyle(color: AppColors.gray)),
             ),
             TextButton(
               onPressed: () async {
-                if (latePerDayController.text.isEmpty || 
+                if (latePerDayController.text.isEmpty ||
                     minorController.text.isEmpty ||
                     moderateController.text.isEmpty ||
                     majorController.text.isEmpty ||
@@ -433,7 +456,7 @@ class SettingsScreen extends ConsumerWidget {
                   );
                   return;
                 }
-                
+
                 try {
                   final damageRules = DamageRules(
                     lost: int.tryParse(lostController.text) ?? 100,
@@ -441,30 +464,32 @@ class SettingsScreen extends ConsumerWidget {
                     minor: int.tryParse(minorController.text) ?? 8,
                     moderate: int.tryParse(moderateController.text) ?? 15,
                   );
-                  
+
                   final penaltyRules = PenaltyRules(
                     damage: damageRules,
                     latePerDay: int.tryParse(latePerDayController.text) ?? 5000,
                   );
-                  
-                  await ref.read(penaltyRulesProvider.notifier).addPenaltyRule(penaltyRules);
-                  _showSuccessMessage(context, 'Penalty rule added successfully');
+
+                  await ref
+                      .read(penaltyRulesProvider.notifier)
+                      .addPenaltyRule(penaltyRules);
+                  _showSuccessMessage(
+                    context,
+                    'Penalty rule added successfully',
+                  );
                   Navigator.of(context).pop();
                 } catch (e) {
                   _showErrorMessage(context, 'Failed to add penalty rule: $e');
                 }
               },
-              child: Text(
-                'Save',
-                style: TextStyle(color: AppColors.primary),
-              ),
+              child: Text('Save', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
       },
     );
   }
-  
+
   Widget _buildInputField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -485,10 +510,7 @@ class SettingsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.secondary,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: AppColors.outline,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.outline, width: 1),
             ),
             child: TextField(
               controller: controller,
@@ -505,22 +527,16 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
-  
+
   void _showSuccessMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.primary),
     );
   }
-  
+
   void _showErrorMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.red),
     );
   }
 }

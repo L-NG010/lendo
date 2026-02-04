@@ -277,7 +277,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                                   value: currentCondition,
                                   decoration: InputDecoration(
                                     filled: true,
-                                    fillColor: AppColors.background,
+                                    fillColor: AppColors.secondary,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: const BorderSide(
@@ -301,7 +301,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                                   style: const TextStyle(
                                     color: AppColors.white,
                                   ),
-                                  dropdownColor: AppColors.background,
+                                  dropdownColor: AppColors.secondary,
                                   items: const [
                                     DropdownMenuItem(
                                       value: 'good',

@@ -3,7 +3,8 @@ import 'package:lendo/config/app_config.dart';
 
 class ReturnCard extends StatefulWidget {
   final Map<String, dynamic> loan;
-  final Function(Map<String, dynamic>, Map<String, String>, String) onConfirmReturn;
+  final Function(Map<String, dynamic>, Map<String, String>, String)
+  onConfirmReturn;
 
   const ReturnCard({
     Key? key,
@@ -134,10 +135,7 @@ class _ReturnCardState extends State<ReturnCard> {
         const SizedBox(height: AppSpacing.md),
         const Text(
           'Set return condition for each asset:',
-          style: TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: AppSpacing.sm),
         Expanded(
@@ -186,7 +184,7 @@ class _ReturnCardState extends State<ReturnCard> {
                         value: _mapToDropdownValue(currentCondition),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: AppColors.background,
+                          fillColor: AppColors.secondary,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(color: AppColors.outline),
@@ -197,29 +195,43 @@ class _ReturnCardState extends State<ReturnCard> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: AppColors.primary, width: 2),
+                            borderSide: BorderSide(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
                           ),
                         ),
-                        style: TextStyle(color: AppColors.white), // White text for visibility
-                        dropdownColor: AppColors.background, // Matching app background
+                        style: TextStyle(color: AppColors.white),
+                        dropdownColor: AppColors.secondary,
                         items: [
                           DropdownMenuItem(
                             value: 'ringan',
-                            child: Text('Ringan', style: TextStyle(color: AppColors.white)),
+                            child: Text(
+                              'Ringan',
+                              style: TextStyle(color: AppColors.white),
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'sedang',
-                            child: Text('Sedang', style: TextStyle(color: AppColors.white)),
+                            child: Text(
+                              'Sedang',
+                              style: TextStyle(color: AppColors.white),
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'parah',
-                            child: Text('Parah', style: TextStyle(color: AppColors.white)),
+                            child: Text(
+                              'Parah',
+                              style: TextStyle(color: AppColors.white),
+                            ),
                           ),
                         ],
                         onChanged: (String? newValue) {
                           if (newValue != null) {
                             setState(() {
-                              _returnConditions[key] = _mapFromDropdownValue(newValue);
+                              _returnConditions[key] = _mapFromDropdownValue(
+                                newValue,
+                              );
                             });
                           }
                         },
@@ -234,10 +246,7 @@ class _ReturnCardState extends State<ReturnCard> {
         const SizedBox(height: AppSpacing.md),
         const Text(
           'Reason for return:',
-          style: TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: AppSpacing.xs),
         TextField(
@@ -262,8 +271,7 @@ class _ReturnCardState extends State<ReturnCard> {
           ),
           maxLines: 3,
           onChanged: (value) {
-            setState(() {
-            });
+            setState(() {});
           },
         ),
         const SizedBox(height: AppSpacing.md),
@@ -280,7 +288,10 @@ class _ReturnCardState extends State<ReturnCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Confirm Return', style: TextStyle(color: AppColors.white)),
+            child: const Text(
+              'Confirm Return',
+              style: TextStyle(color: AppColors.white),
+            ),
           ),
         ),
       ],
@@ -290,7 +301,8 @@ class _ReturnCardState extends State<ReturnCard> {
   String _mapToDropdownValue(String value) {
     if (value == 'good' || value == 'ringan') return 'ringan';
     if (value == 'minor' || value == 'sedang') return 'sedang';
-    if (value == 'major' || value == 'parah' || value == 'damaged') return 'parah';
+    if (value == 'major' || value == 'parah' || value == 'damaged')
+      return 'parah';
     return 'ringan';
   }
 

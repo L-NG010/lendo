@@ -18,21 +18,22 @@ class AssetService {
     try {
       print('Attempting to upload to bucket: assets');
       print('File path: ' + imageFile.path);
-      
+
       // Check if we're in a web environment (blob URL)
       if (imageFile.path.startsWith('blob:')) {
         print('Web environment detected - image upload not supported on web');
-        throw Exception('Image upload is not supported on web. Please use a mobile device or desktop application for image uploads.');
+        throw Exception(
+          'Image upload is not supported on web. Please use a mobile device or desktop application for image uploads.',
+        );
       } else {
         print('Native environment detected - using SDK');
         // Use the standard SDK approach for native platforms
-        await _supabase.storage.from('assets').upload(
-          fileName,
-          imageFile,
-        );
-        
+        await _supabase.storage.from('assets').upload(fileName, imageFile);
+
         // Get the public URL
-        final publicUrl = _supabase.storage.from('assets').getPublicUrl(fileName);
+        final publicUrl = _supabase.storage
+            .from('assets')
+            .getPublicUrl(fileName);
         return publicUrl;
       }
     } catch (e) {
@@ -40,25 +41,25 @@ class AssetService {
       throw Exception('Failed to upload image: ' + e.toString());
     }
   }
-  
+
   // Upload image using REST API for web environments
   Future<String> _uploadImageWeb(File imageFile, String fileName) async {
     try {
       // Get the Supabase URL and access token
       final supabaseUrl = dotenv.env['SUPABASE_URL'];
       final accessToken = _supabase.auth.currentSession?.accessToken;
-      
+
       if (supabaseUrl == null) {
         throw Exception('Supabase URL not found in environment');
       }
-      
+
       if (accessToken == null) {
         throw Exception('User not authenticated');
       }
-      
+
       // Upload using REST API - send the file directly
       final url = Uri.parse('$supabaseUrl/storage/v1/object/assets/$fileName');
-      
+
       // For web, we need to handle the blob URL differently
       // Try to read the file as bytes
       Uint8List bytes;
@@ -70,7 +71,7 @@ class AssetService {
         // Fallback to sync method
         bytes = imageFile.readAsBytesSync();
       }
-      
+
       final response = await http.post(
         url,
         headers: {
@@ -80,12 +81,14 @@ class AssetService {
         },
         body: bytes,
       );
-      
+
       if (response.statusCode == 200) {
         // Return the public URL
         return '$supabaseUrl/storage/v1/object/public/assets/$fileName';
       } else {
-        throw Exception('Upload failed: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Upload failed: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('Error in _uploadImageWeb: ' + e.toString());
@@ -129,17 +132,21 @@ class AssetService {
     required String code,
     required String status,
     String? pictureUrl,
-    String? price,
+    num? price,
   }) async {
     try {
-      final response = await _supabase.from('assets').insert({
-        'name': name,
-        'category': category,
-        'code': code,
-        'status': status,
-        'picture_url': pictureUrl,
-        'price': price,
-      }).select().single();
+      final response = await _supabase
+          .from('assets')
+          .insert({
+            'name': name,
+            'category': category,
+            'code': code,
+            'status': status,
+            'picture_url': pictureUrl,
+            'price': price,
+          })
+          .select()
+          .single();
 
       return Asset.fromJson(response);
     } catch (e) {
@@ -155,17 +162,22 @@ class AssetService {
     String? code,
     String? status,
     String? pictureUrl,
-    String? price,
+    num? price,
   }) async {
     try {
-      final response = await _supabase.from('assets').update({
-        if (name != null) 'name': name,
-        if (category != null) 'category': category,
-        if (code != null) 'code': code,
-        if (status != null) 'status': status,
-        if (pictureUrl != null) 'picture_url': pictureUrl,
-        if (price != null) 'price': price,
-      }).eq('id', id).select().single();
+      final response = await _supabase
+          .from('assets')
+          .update({
+            if (name != null) 'name': name,
+            if (category != null) 'category': category,
+            if (code != null) 'code': code,
+            if (status != null) 'status': status,
+            if (pictureUrl != null) 'picture_url': pictureUrl,
+            if (price != null) 'price': price,
+          })
+          .eq('id', id)
+          .select()
+          .single();
 
       return Asset.fromJson(response);
     } catch (e) {

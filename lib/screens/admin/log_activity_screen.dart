@@ -11,16 +11,24 @@ class LogActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activityLogsAsync = ref.watch(activityLogsProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Activity Log', style: TextStyle(color: AppColors.white)),
+        title: const Text(
+          'Activity Log',
+          style: TextStyle(color: AppColors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.white,
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.filter_list, color: AppColors.white),
+            color: AppColors.secondary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: AppColors.outline),
+            ),
             onSelected: (String result) {
               // Handle filter selection
               if (result != 'all') {
@@ -32,7 +40,10 @@ class LogActivityScreen extends ConsumerWidget {
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               const PopupMenuItem<String>(
                 value: 'all',
-                child: Text('All Activities', style: TextStyle(color: AppColors.white)),
+                child: Text(
+                  'All Activities',
+                  style: TextStyle(color: AppColors.white),
+                ),
               ),
               const PopupMenuItem<String>(
                 value: 'create',
@@ -69,7 +80,11 @@ class LogActivityScreen extends ConsumerWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.history_outlined, size: 48, color: AppColors.gray),
+                            Icon(
+                              Icons.history_outlined,
+                              size: 48,
+                              color: AppColors.gray,
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'No activity logs found',
@@ -79,7 +94,7 @@ class LogActivityScreen extends ConsumerWidget {
                         ),
                       );
                     }
-                                  
+
                     return ListView.builder(
                       itemCount: logs.length,
                       itemBuilder: (context, index) {
@@ -88,12 +103,18 @@ class LogActivityScreen extends ConsumerWidget {
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
                   error: (error, stack) => Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.red, size: 48),
+                        Icon(
+                          Icons.error_outline,
+                          color: AppColors.red,
+                          size: 48,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading activity logs: $error',
@@ -110,14 +131,14 @@ class LogActivityScreen extends ConsumerWidget {
       ),
     );
   }
-  
+
   Widget _buildActivityItemFromModel(ActivityLog log) {
     String actionText = '';
     IconData actionIcon;
     Color actionColor = AppColors.primary;
     String description = _generateDescription(log);
-    
-    switch(log.action.toLowerCase()) {
+
+    switch (log.action.toLowerCase()) {
       case 'create':
         actionText = 'Added';
         actionIcon = Icons.add_circle_outline;
@@ -138,17 +159,14 @@ class LogActivityScreen extends ConsumerWidget {
         actionColor = AppColors.gray;
         break;
     }
-    
+
     return Card(
       color: AppColors.secondary,
       elevation: 0,
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: AppColors.outline,
-          width: 1,
-        ),
+        side: BorderSide(color: AppColors.outline, width: 1),
       ),
       child: ExpansionTile(
         leading: Container(
@@ -157,11 +175,7 @@ class LogActivityScreen extends ConsumerWidget {
             color: actionColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(
-            actionIcon,
-            color: actionColor,
-            size: 18,
-          ),
+          child: Icon(actionIcon, color: actionColor, size: 18),
         ),
         title: Text(
           actionText,
@@ -173,10 +187,7 @@ class LogActivityScreen extends ConsumerWidget {
         ),
         subtitle: Text(
           description,
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: AppColors.white, fontSize: 12),
         ),
         children: [
           Container(
@@ -197,10 +208,7 @@ class LogActivityScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       log.entity,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: AppColors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -218,10 +226,7 @@ class LogActivityScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       log.entityId,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: AppColors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -239,10 +244,7 @@ class LogActivityScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${log.userId.substring(0, 8)}...',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: AppColors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -260,10 +262,7 @@ class LogActivityScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${_formatDateTime(log.createdAt)} (${log.createdAt.toString().substring(0, 19)})',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: AppColors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -286,10 +285,7 @@ class LogActivityScreen extends ConsumerWidget {
                       ),
                       child: Text(
                         log.oldValue!,
-                        style: TextStyle(
-                          color: AppColors.red,
-                          fontSize: 10,
-                        ),
+                        style: TextStyle(color: AppColors.red, fontSize: 10),
                       ),
                     ),
                   ],
@@ -325,11 +321,11 @@ class LogActivityScreen extends ConsumerWidget {
       ),
     );
   }
-  
+
   String _generateDescription(ActivityLog log) {
     String entityName = log.entity;
-    
-    switch(log.action.toLowerCase()) {
+
+    switch (log.action.toLowerCase()) {
       case 'create':
         return 'Added a new $entityName with ID ${log.entityId}';
       case 'update':
@@ -343,11 +339,11 @@ class LogActivityScreen extends ConsumerWidget {
         return '${log.action} operation on $entityName ID ${log.entityId}';
     }
   }
-  
+
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {

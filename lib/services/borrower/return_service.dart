@@ -16,7 +16,7 @@ class ReturnService {
         'return_loan',
         params: {
           'p_loan_id': loanId,
-          'p_details': details, // JSONB array of {detail_id, cond}
+          'p_details': details,
           'p_reason': reason,
         },
       );

@@ -50,20 +50,14 @@ class _OfficerReturnScreenState extends ConsumerState<OfficerReturnScreen> {
             Expanded(
               child: allLoansAsync.when(
                 data: (loans) {
-                  // Filter for loans that have been returned (returnedAt is not null)
-                  // AND have 'returned' status (pending approval).
-                  // If approved, status changes to something else (e.g. approved),
-                  // or we assume successful approval removes 'returned' status or similar.
-                  // Based on typical flows, we only show items needing action.
                   final returnedLoans = loans
                       .where(
                         (loan) =>
                             loan.returnedAt != null &&
-                            loan.status == 'returned',
+                            loan.status == 'approved',
                       )
                       .toList();
 
-                  // Sort by returned date descending (most recent first)
                   returnedLoans.sort((a, b) {
                     final dateA = a.returnedAt ?? '';
                     final dateB = b.returnedAt ?? '';

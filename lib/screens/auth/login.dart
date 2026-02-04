@@ -175,7 +175,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 route = '/borrower-dashboard';
                                 break;
                               default:
-                                // Jika role tidak dikenal, tetap di login
                                 if (mounted) {
                                   CustomSnackBar.show(
                                     context,
