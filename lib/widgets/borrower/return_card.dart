@@ -7,10 +7,10 @@ class ReturnCard extends StatefulWidget {
   onConfirmReturn;
 
   const ReturnCard({
-    Key? key,
+    super.key,
     required this.loan,
     required this.onConfirmReturn,
-  }) : super(key: key);
+  });
 
   @override
   State<ReturnCard> createState() => _ReturnCardState();
@@ -181,7 +181,7 @@ class _ReturnCardState extends State<ReturnCard> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       DropdownButtonFormField<String>(
-                        value: _mapToDropdownValue(currentCondition),
+                        initialValue: _mapToDropdownValue(currentCondition),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.secondary,
@@ -301,8 +301,9 @@ class _ReturnCardState extends State<ReturnCard> {
   String _mapToDropdownValue(String value) {
     if (value == 'good' || value == 'ringan') return 'ringan';
     if (value == 'minor' || value == 'sedang') return 'sedang';
-    if (value == 'major' || value == 'parah' || value == 'damaged')
+    if (value == 'major' || value == 'parah' || value == 'damaged') {
       return 'parah';
+    }
     return 'ringan';
   }
 

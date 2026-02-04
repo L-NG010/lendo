@@ -19,7 +19,7 @@ class CategoryService {
           .order('id', ascending: true);
 
       return response.map((data) {
-        final category = data as Map<String, dynamic>;
+        final category = data;
         return CategoryModel(
           id: category['id'] is int
               ? category['id']
@@ -41,7 +41,7 @@ class CategoryService {
           .eq('id', id)
           .single();
 
-      final category = response as Map<String, dynamic>;
+      final category = response;
       return CategoryModel(
         id: category['id'] is int
             ? category['id']
@@ -62,7 +62,7 @@ class CategoryService {
           .select()
           .single();
 
-      final category = response as Map<String, dynamic>;
+      final category = response;
       return CategoryModel(
         id: category['id'] is int
             ? category['id']
@@ -84,7 +84,7 @@ class CategoryService {
           .select()
           .single();
 
-      final category = response as Map<String, dynamic>;
+      final category = response;
       return CategoryModel(
         id: category['id'] is int
             ? category['id']

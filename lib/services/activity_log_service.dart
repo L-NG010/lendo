@@ -19,7 +19,7 @@ class ActivityLogService {
           .order('created_at', ascending: false); // Order by newest first
       
       return response.map((data) {
-        final log = data as Map<String, dynamic>;
+        final log = data;
         return ActivityLog.fromJson(log);
       }).toList();
     } catch (e) {
@@ -37,7 +37,7 @@ class ActivityLogService {
           .order('created_at', ascending: false);
       
       return response.map((data) {
-        final log = data as Map<String, dynamic>;
+        final log = data;
         return ActivityLog.fromJson(log);
       }).toList();
     } catch (e) {
@@ -55,7 +55,7 @@ class ActivityLogService {
           .order('created_at', ascending: false);
       
       return response.map((data) {
-        final log = data as Map<String, dynamic>;
+        final log = data;
         return ActivityLog.fromJson(log);
       }).toList();
     } catch (e) {
@@ -73,7 +73,7 @@ class ActivityLogService {
           .order('created_at', ascending: false);
       
       return response.map((data) {
-        final log = data as Map<String, dynamic>;
+        final log = data;
         return ActivityLog.fromJson(log);
       }).toList();
     } catch (e) {
@@ -91,7 +91,7 @@ class ActivityLogService {
           .limit(limit);
       
       return response.map((data) {
-        final log = data as Map<String, dynamic>;
+        final log = data;
         return ActivityLog.fromJson(log);
       }).toList();
     } catch (e) {

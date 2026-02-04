@@ -83,7 +83,7 @@ class CategoryManagementScreen extends ConsumerWidget {
             'Add New Category',
             style: TextStyle(color: AppColors.white),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -165,7 +165,7 @@ class CategoryManagementScreen extends ConsumerWidget {
             'Update Category',
             style: TextStyle(color: AppColors.white),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,

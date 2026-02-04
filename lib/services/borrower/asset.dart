@@ -68,7 +68,7 @@ class AssetStockService {
         List<int> assetIds = await getAvailableAssetIds(assetName, quantity);
         
         if (assetIds.length < quantity) {
-          throw Exception('Tidak cukup stok untuk ${assetName}. Tersedia: ${assetIds.length}, Dibutuhkan: $quantity');
+          throw Exception('Tidak cukup stok untuk $assetName. Tersedia: ${assetIds.length}, Dibutuhkan: $quantity');
         }
         
         allAssetIds.addAll(assetIds);

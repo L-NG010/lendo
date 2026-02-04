@@ -277,7 +277,7 @@ class _CartItemTile extends StatelessWidget {
 class _SubmitButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
-  const _SubmitButton({Key? key, this.onPressed}) : super(key: key);
+  const _SubmitButton({super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -304,13 +304,13 @@ class _DateAndReasonFields extends StatefulWidget {
   final Function(String) onReasonChanged;
 
   const _DateAndReasonFields({
-    Key? key,
+    super.key,
     required this.pickupDate,
     required this.returnDate,
     required this.reason,
     required this.onDateSelected,
     required this.onReasonChanged,
-  }) : super(key: key);
+  });
 
   @override
   _DateAndReasonFieldsState createState() => _DateAndReasonFieldsState();

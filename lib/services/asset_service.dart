@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:riverpod/riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lendo/config/supabase_config.dart';
 import 'package:lendo/models/asset_model.dart';
 
@@ -16,15 +17,9 @@ class AssetService {
   // Upload image to Supabase Storage and return public URL
   Future<String?> uploadImage(File imageFile, String fileName) async {
     try {
-      print('Attempting to upload to bucket: assets');
-      print('File path: ' + imageFile.path);
-
       // Check if we're in a web environment (blob URL)
       if (imageFile.path.startsWith('blob:')) {
-        print('Web environment detected - image upload not supported on web');
-        throw Exception(
-          'Image upload is not supported on web. Please use a mobile device or desktop application for image uploads.',
-        );
+        return await _uploadImageWeb(imageFile, fileName);
       } else {
         print('Native environment detected - using SDK');
         // Use the standard SDK approach for native platforms
@@ -37,8 +32,58 @@ class AssetService {
         return publicUrl;
       }
     } catch (e) {
-      print('Error uploading image: ' + e.toString());
-      throw Exception('Failed to upload image: ' + e.toString());
+      print('Error uploading image: $e');
+      throw Exception('Failed to upload image: $e');
+    }
+  }
+
+  // Upload image bytes (for Web support)
+  Future<String> uploadImageBytes(Uint8List bytes, String fileName) async {
+    try {
+      await _supabase.storage
+          .from('assets')
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+
+      final publicUrl = _supabase.storage.from('assets').getPublicUrl(fileName);
+      return publicUrl;
+    } catch (e) {
+      print('Error uploading image bytes: $e');
+      // Fallback to manual REST upload if SDK fails on web (sometimes happens)
+      return await _uploadImageBytesRest(bytes, fileName);
+    }
+  }
+
+  // Fallback REST upload for bytes
+  Future<String> _uploadImageBytesRest(Uint8List bytes, String fileName) async {
+    // Get the Supabase URL and access token
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final accessToken = _supabase.auth.currentSession?.accessToken;
+
+    if (supabaseUrl == null) throw Exception('Supabase URL not found');
+    if (accessToken == null) throw Exception('User not authenticated');
+
+    final url = Uri.parse('$supabaseUrl/storage/v1/object/assets/$fileName');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'image/jpeg',
+        'cacheControl': '3600',
+      },
+      body: bytes,
+    );
+
+    if (response.statusCode == 200) {
+      return '$supabaseUrl/storage/v1/object/public/assets/$fileName';
+    } else {
+      throw Exception(
+        'Upload failed: ${response.statusCode} - ${response.body}',
+      );
     }
   }
 
@@ -65,9 +110,9 @@ class AssetService {
       Uint8List bytes;
       try {
         bytes = await imageFile.readAsBytes();
-        print('File size: ' + bytes.length.toString() + ' bytes');
+        print('File size: ${bytes.length} bytes');
       } catch (e) {
-        print('Error reading file as bytes: ' + e.toString());
+        print('Error reading file as bytes: $e');
         // Fallback to sync method
         bytes = imageFile.readAsBytesSync();
       }
@@ -91,7 +136,7 @@ class AssetService {
         );
       }
     } catch (e) {
-      print('Error in _uploadImageWeb: ' + e.toString());
+      print('Error in _uploadImageWeb: $e');
       rethrow;
     }
   }

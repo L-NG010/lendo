@@ -1,9 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/asset_model.dart';
+import 'package:lendo/models/category_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
 import 'package:lendo/widgets/asset_card.dart';
 import 'package:lendo/providers/asset_provider.dart';
@@ -16,14 +18,26 @@ class AssetManagementScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch providers
     final assetsAsync = ref.watch(assetsProvider);
+    final categoriesAsync = ref.watch(categoriesProvider); // ✅ Watch categories
     final filterState = ref.watch(filterProvider);
     final filteredAssets = ref.watch(filteredAssetsProvider);
 
-    // Extract unique categories
-    final categories = {'All'};
+    // Extract unique category IDs present in assets
+    final assetCategoryIds = <String>{};
     assetsAsync.whenData((assets) {
-      categories.addAll(assets.map((asset) => asset.category.toString()));
+      assetCategoryIds.addAll(assets.map((asset) => asset.category.toString()));
     });
+
+    // Prepare Dropdown Items
+    // We want to show "All" + Categories that exist (or all categories)
+    // Let's rely on categoriesProvider to get Names
+    // Categories and Assets are already watched above.
+    // PopupMenu will handle item generation dynamically.
+    // If categories are loading/error, we might still have just "All" or raw IDs
+    // But since we are inside build, we can just use what we have.
+    // If categories isn't loaded yet, we can't map names.
+    // A better approach might be to show raw IDs until categories load, or just show "Loading..."
+    // Simpler: Just map what we can.
 
     return Scaffold(
       appBar: AppBar(
@@ -76,44 +90,111 @@ class AssetManagementScreen extends ConsumerWidget {
                   ),
                 ),
                 // Category filter dropdown
-                Expanded(
-                  child: Container(
+                // Category filter popup menu
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.outline),
+                  ),
+                  child: PopupMenuButton<String>(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
+                    color: AppColors.secondary,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.outline),
+                      side: BorderSide(color: AppColors.outline),
                     ),
-                    child: DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.secondary,
-                      value: filterState.selectedCategory,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      items: categories.map((String category) {
-                        return DropdownMenuItem(
-                          value: category,
+                    icon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_list,
+                          color: AppColors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        // Safe access to category name for display
+                        Builder(
+                          builder: (context) {
+                            String displayName = 'All Categories';
+                            if (filterState.selectedCategory != 'All') {
+                              displayName =
+                                  'Category ${filterState.selectedCategory}';
+                              if (categoriesAsync.hasValue) {
+                                final cat = categoriesAsync.value!
+                                    .cast<CategoryModel?>()
+                                    .firstWhere(
+                                      (c) =>
+                                          c?.id.toString() ==
+                                          filterState.selectedCategory,
+                                      orElse: () => null,
+                                    );
+                                if (cat != null) displayName = cat.name;
+                              }
+                            }
+
+                            return Text(
+                              displayName,
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.white,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    onSelected: (String result) {
+                      ref
+                          .read(filterProvider.notifier)
+                          .setSelectedCategory(result);
+                    },
+                    itemBuilder: (BuildContext context) {
+                      final List<PopupMenuEntry<String>> items = [
+                        const PopupMenuItem<String>(
+                          value: 'All',
                           child: Text(
-                            category,
-                            style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 12,
-                            ),
+                            'All Categories',
+                            style: TextStyle(color: AppColors.white),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        ref
-                            .read(filterProvider.notifier)
-                            .setSelectedCategory(newValue ?? 'All');
-                      },
-                    ),
+                        ),
+                      ];
+
+                      if (categoriesAsync.hasValue && assetsAsync.hasValue) {
+                        final categories = categoriesAsync.value!;
+                        final assets = assetsAsync.value!;
+                        final assetCategoryIds = assets
+                            .map((asset) => asset.category.toString())
+                            .toSet();
+                        final categoryMap = {
+                          for (var c in categories) c.id.toString(): c.name,
+                        };
+                        final sortedIds = assetCategoryIds.toList()..sort();
+
+                        for (var id in sortedIds) {
+                          final name = categoryMap[id] ?? 'Category $id';
+                          items.add(
+                            PopupMenuItem<String>(
+                              value: id,
+                              child: Text(
+                                name,
+                                style: TextStyle(color: AppColors.white),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                      return items;
+                    },
                   ),
                 ),
               ],
@@ -153,10 +234,21 @@ class AssetManagementScreen extends ConsumerWidget {
                     itemCount: filteredAssets.length,
                     itemBuilder: (context, index) {
                       final asset = filteredAssets[index];
+                      // Find category name
+                      String categoryName = 'Unknown';
+                      if (categoriesAsync.hasValue) {
+                        final category = categoriesAsync.value!.firstWhere(
+                          (c) => c.id == asset.category,
+                          orElse: () => CategoryModel(id: -1, name: 'Unknown'),
+                        );
+                        categoryName = category.name;
+                      }
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: AssetCard(
                           asset: asset,
+                          categoryName: categoryName,
                           onEdit: () => _showUpdateDialog(context, ref, asset),
                           onDelete: () =>
                               _showDeleteDialog(context, ref, asset),
@@ -198,13 +290,13 @@ class AssetManagementScreen extends ConsumerWidget {
   }
 
   void _showAddAssetDialog(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    // categoriesProvider moved to Consumer
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     int? selectedCategory;
     String selectedStatus = 'available';
     final priceController = TextEditingController();
-    File? selectedImage;
+    Uint8List? selectedImageBytes;
 
     showDialog(
       context: context,
@@ -217,7 +309,7 @@ class AssetManagementScreen extends ConsumerWidget {
                 'Add New Asset',
                 style: TextStyle(color: AppColors.white),
               ),
-              content: Container(
+              content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
                   child: Column(
@@ -236,9 +328,9 @@ class AssetManagementScreen extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            if (selectedImage != null)
-                              Image.file(
-                                selectedImage!,
+                            if (selectedImageBytes != null)
+                              Image.memory(
+                                selectedImageBytes!,
                                 height: 100,
                                 fit: BoxFit.cover,
                               )
@@ -263,12 +355,13 @@ class AssetManagementScreen extends ConsumerWidget {
                                     source: ImageSource.gallery,
                                   );
                                   if (image != null) {
+                                    final bytes = await image.readAsBytes();
                                     setState(() {
-                                      selectedImage = File(image.path);
+                                      selectedImageBytes = bytes;
                                     });
                                   }
                                 } catch (e) {
-                                  print('Error picking image: ' + e.toString());
+                                  print('Error picking image: $e');
                                 }
                               },
                               child: Text(
@@ -286,66 +379,95 @@ class AssetManagementScreen extends ConsumerWidget {
                       _buildTextField('Code:', codeController),
                       _buildDropdownField(
                         label: 'Category:',
-                        child: categoriesAsync.when(
-                          data: (categories) {
-                            return DropdownButtonFormField<int>(
-                              value: selectedCategory,
-                              dropdownColor: AppColors.secondary,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.secondary,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: AppColors.outline,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final categoriesAsync = ref.watch(
+                              categoriesProvider,
+                            );
+                            return categoriesAsync.when(
+                              data: (categories) {
+                                return DropdownButtonFormField<int>(
+                                  initialValue: selectedCategory,
+                                  dropdownColor: AppColors.secondary,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.background,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                   ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              style: TextStyle(color: AppColors.white),
-                              hint: Text(
-                                'Select category',
-                                style: TextStyle(color: AppColors.gray),
-                              ),
-                              items: categories.map((cat) {
-                                return DropdownMenuItem(
-                                  value: cat.id,
-                                  child: Text(
-                                    cat.name,
-                                    style: TextStyle(color: AppColors.white),
+                                  style: TextStyle(color: AppColors.white),
+                                  hint: Text(
+                                    'Select category',
+                                    style: TextStyle(color: AppColors.gray),
                                   ),
+                                  items: categories.map((cat) {
+                                    return DropdownMenuItem(
+                                      value: cat.id,
+                                      child: Text(
+                                        cat.name,
+                                        style: TextStyle(
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedCategory = value;
+                                    });
+                                  },
                                 );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedCategory = value;
-                                });
                               },
+                              loading: () => CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                              error: (_, __) => Text(
+                                'Error loading categories',
+                                style: TextStyle(color: AppColors.red),
+                              ),
                             );
                           },
-                          loading: () => CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          error: (_, __) => Text(
-                            'Error loading categories',
-                            style: TextStyle(color: AppColors.red),
-                          ),
                         ),
                       ),
                       _buildDropdownField(
                         label: 'Status:',
                         child: DropdownButtonFormField<String>(
-                          value: selectedStatus,
+                          initialValue: selectedStatus,
                           dropdownColor: AppColors.secondary,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.secondary,
+                            fillColor: AppColors.background,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
                               borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -393,14 +515,13 @@ class AssetManagementScreen extends ConsumerWidget {
                     }
                     try {
                       String? uploadedUrl;
-                      if (selectedImage != null) {
+                      if (selectedImageBytes != null) {
                         final fileName =
-                            'asset_' +
-                            DateTime.now().millisecondsSinceEpoch.toString() +
-                            '.jpg';
+                            'asset_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                        // Use the bytes upload method
                         uploadedUrl = await ref
                             .read(assetServiceProvider)
-                            .uploadImage(selectedImage!, fileName);
+                            .uploadImageBytes(selectedImageBytes!, fileName);
                       }
 
                       await ref
@@ -436,7 +557,7 @@ class AssetManagementScreen extends ConsumerWidget {
   }
 
   void _showUpdateDialog(BuildContext context, WidgetRef ref, Asset asset) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    // categoriesProvider moved to Consumer
     final nameController = TextEditingController(text: asset.name);
     final codeController = TextEditingController(text: asset.code);
     int selectedCategory = asset.category;
@@ -444,7 +565,7 @@ class AssetManagementScreen extends ConsumerWidget {
     final priceController = TextEditingController(
       text: asset.price?.toString() ?? '',
     );
-    File? selectedImage;
+    Uint8List? selectedImageBytes;
 
     showDialog(
       context: context,
@@ -457,7 +578,7 @@ class AssetManagementScreen extends ConsumerWidget {
                 'Update Asset',
                 style: TextStyle(color: AppColors.white),
               ),
-              content: Container(
+              content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
                   child: Column(
@@ -476,9 +597,9 @@ class AssetManagementScreen extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            if (selectedImage != null)
-                              Image.file(
-                                selectedImage!,
+                            if (selectedImageBytes != null)
+                              Image.memory(
+                                selectedImageBytes!,
                                 height: 100,
                                 fit: BoxFit.cover,
                               )
@@ -509,12 +630,13 @@ class AssetManagementScreen extends ConsumerWidget {
                                     source: ImageSource.gallery,
                                   );
                                   if (image != null) {
+                                    final bytes = await image.readAsBytes();
                                     setState(() {
-                                      selectedImage = File(image.path);
+                                      selectedImageBytes = bytes;
                                     });
                                   }
                                 } catch (e) {
-                                  print('Error picking image: ' + e.toString());
+                                  print('Error picking image: $e');
                                 }
                               },
                               child: Text(
@@ -532,66 +654,95 @@ class AssetManagementScreen extends ConsumerWidget {
                       _buildTextField('Code:', codeController),
                       _buildDropdownField(
                         label: 'Category:',
-                        child: categoriesAsync.when(
-                          data: (categories) {
-                            return DropdownButtonFormField<int>(
-                              value: selectedCategory,
-                              dropdownColor: AppColors.secondary,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.secondary,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: AppColors.outline,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final categoriesAsync = ref.watch(
+                              categoriesProvider,
+                            );
+                            return categoriesAsync.when(
+                              data: (categories) {
+                                return DropdownButtonFormField<int>(
+                                  initialValue: selectedCategory,
+                                  dropdownColor: AppColors.secondary,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.background,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                   ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              style: TextStyle(color: AppColors.white),
-                              hint: Text(
-                                'Select category',
-                                style: TextStyle(color: AppColors.gray),
-                              ),
-                              items: categories.map((cat) {
-                                return DropdownMenuItem(
-                                  value: cat.id,
-                                  child: Text(
-                                    cat.name,
-                                    style: TextStyle(color: AppColors.white),
+                                  style: TextStyle(color: AppColors.white),
+                                  hint: Text(
+                                    'Select category',
+                                    style: TextStyle(color: AppColors.gray),
                                   ),
+                                  items: categories.map((cat) {
+                                    return DropdownMenuItem(
+                                      value: cat.id,
+                                      child: Text(
+                                        cat.name,
+                                        style: TextStyle(
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedCategory = value!;
+                                    });
+                                  },
                                 );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedCategory = value!;
-                                });
                               },
+                              loading: () => CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                              error: (_, __) => Text(
+                                'Error loading categories',
+                                style: TextStyle(color: AppColors.red),
+                              ),
                             );
                           },
-                          loading: () => CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          error: (_, __) => Text(
-                            'Error loading categories',
-                            style: TextStyle(color: AppColors.red),
-                          ),
                         ),
                       ),
                       _buildDropdownField(
                         label: 'Status:',
                         child: DropdownButtonFormField<String>(
-                          value: selectedStatus,
+                          initialValue: selectedStatus,
                           dropdownColor: AppColors.secondary,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.secondary,
+                            fillColor: AppColors.background,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
                               borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -635,14 +786,12 @@ class AssetManagementScreen extends ConsumerWidget {
                   onPressed: () async {
                     try {
                       String? finalUrl = asset.pictureUrl;
-                      if (selectedImage != null) {
+                      if (selectedImageBytes != null) {
                         final fileName =
-                            'asset_' +
-                            DateTime.now().millisecondsSinceEpoch.toString() +
-                            '.jpg';
+                            'asset_${DateTime.now().millisecondsSinceEpoch}.jpg';
                         finalUrl = await ref
                             .read(assetServiceProvider)
-                            .uploadImage(selectedImage!, fileName);
+                            .uploadImageBytes(selectedImageBytes!, fileName);
                       }
 
                       await ref
@@ -738,6 +887,9 @@ class AssetManagementScreen extends ConsumerWidget {
   }
 
   Widget _buildTextField(String label, TextEditingController controller) {
+    // Add capitalization for Name field only
+    final isNameField = label.toLowerCase().contains('name');
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -752,22 +904,51 @@ class AssetManagementScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.outline, width: 1),
-            ),
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'Enter ' + label.toLowerCase(),
-                hintStyle: TextStyle(color: AppColors.gray),
-                border: InputBorder.none,
+          TextField(
+            controller: controller,
+            inputFormatters: isNameField
+                ? [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+
+                      final text = newValue.text;
+                      // Capitalize first letter if it's lowercase
+                      if (text[0] == text[0].toLowerCase() &&
+                          text[0] != text[0].toUpperCase()) {
+                        final capitalized =
+                            text[0].toUpperCase() + text.substring(1);
+                        return TextEditingValue(
+                          text: capitalized,
+                          selection: newValue.selection,
+                        );
+                      }
+                      return newValue;
+                    }),
+                  ]
+                : null,
+            decoration: InputDecoration(
+              hintText: 'Enter ${label.toLowerCase()}',
+              hintStyle: TextStyle(color: AppColors.gray),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
               ),
-              style: TextStyle(color: AppColors.white),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide(color: AppColors.outline),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide(color: AppColors.outline),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
             ),
+            style: TextStyle(color: AppColors.white),
           ),
         ],
       ),

@@ -20,7 +20,7 @@ class PenaltyService {
           .order('id', ascending: true);
       
       return response.map((data) {
-        final rule = data as Map<String, dynamic>;
+        final rule = data;
         return PenaltyRule(
           id: rule['id'].toString(),
           rules: PenaltyRules.fromJson(rule['rules']),
@@ -40,7 +40,7 @@ class PenaltyService {
           .eq('id', id)
           .single();
       
-      final rule = response as Map<String, dynamic>;
+      final rule = response;
       return PenaltyRule(
         id: rule['id'].toString(),
         rules: PenaltyRules.fromJson(rule['rules']),
@@ -59,7 +59,7 @@ class PenaltyService {
           .select()
           .single();
       
-      final rule = response as Map<String, dynamic>;
+      final rule = response;
       return PenaltyRule(
         id: rule['id'].toString(),
         rules: PenaltyRules.fromJson(rule['rules']),
@@ -79,7 +79,7 @@ class PenaltyService {
           .select()
           .single();
       
-      final rule = response as Map<String, dynamic>;
+      final rule = response;
       return PenaltyRule(
         id: rule['id'].toString(),
         rules: PenaltyRules.fromJson(rule['rules']),

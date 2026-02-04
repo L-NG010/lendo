@@ -13,6 +13,7 @@ class LoanService {
   // Get all loans with user information
   Future<List<LoanModel>> getAllLoans() async {
     try {
+      final stopwatch = Stopwatch()..start();
       dev.log('Fetching all loans...', name: 'LoanService.getAllLoans');
 
       final response = await _supabase
@@ -20,8 +21,9 @@ class LoanService {
           .select('*, penalties(*), profiles(name)')
           .order('id', ascending: false);
 
+      stopwatch.stop();
       dev.log(
-        'Successfully fetched ${response.length} loans',
+        'Successfully fetched ${response.length} loans in ${stopwatch.elapsedMilliseconds}ms',
         name: 'LoanService.getAllLoans',
       );
 
@@ -442,23 +444,24 @@ class LoanService {
   // Get loan details for a specific loan
   Future<List<LoanDetailModel>> getLoanDetails(String loanId) async {
     try {
-      dev.log(
-        'Fetching loan details for loan ID: $loanId',
-        name: 'LoanService.getLoanDetails',
-      );
-
       final response = await _supabase
           .from('loan_details')
           .select('*, assets(name)')
           .eq('loan_id', loanId)
           .order('id', ascending: false);
 
-      dev.log(
-        'Retrieved ${response.length} loan details for loan ID: $loanId',
-        name: 'LoanService.getLoanDetails',
-      );
+      final details = response
+          .map((data) => LoanDetailModel.fromJson(data))
+          .toList();
 
-      return response.map((data) => LoanDetailModel.fromJson(data)).toList();
+      for (var detail in details) {
+        dev.log(
+          'Asset ID: ${detail.assetId}, Condition: ${detail.condBorrow}',
+          name: 'LoanService.getLoanDetails',
+        );
+      }
+
+      return details;
     } catch (e) {
       dev.log(
         'Error fetching loan details for loan ID $loanId: $e',

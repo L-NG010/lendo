@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lendo/config/app_config.dart';
 import '../../services/auth_service.dart';
-import '../auth/login.dart';
 import '../../providers/user_provider.dart';
 import '../../models/user_model.dart';
 
@@ -40,7 +39,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
 
                 // Logout Button
-                _buildLogoutButton(context, authService),
+                _buildLogoutButton(context, authService, ref),
               ],
             ),
           );
@@ -196,13 +195,21 @@ class BorrowerProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context, AuthService authService) {
+  Widget _buildLogoutButton(
+    BuildContext context,
+    AuthService authService,
+    WidgetRef ref,
+  ) {
     return GestureDetector(
       onTap: () async {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.secondary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.outline, width: 1),
+            ),
             title: const Text(
               'Logout Confirmation',
               style: TextStyle(color: AppColors.white),
@@ -231,7 +238,7 @@ class BorrowerProfileScreen extends ConsumerWidget {
         );
 
         if (confirm == true) {
-          await authService.signOut();
+          await authService.signOut(ref);
           Navigator.of(
             context,
           ).pushNamedAndRemoveUntil('/login', (route) => false);

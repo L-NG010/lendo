@@ -11,7 +11,7 @@ class ExpandableCard extends StatefulWidget {
   final bool initiallyExpanded;
 
   const ExpandableCard({
-    Key? key,
+    super.key,
     required this.title,
     this.subtitle,
     required this.statusColor,
@@ -19,7 +19,7 @@ class ExpandableCard extends StatefulWidget {
     required this.expandedContent,
     required this.icon,
     this.initiallyExpanded = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ExpandableCard> createState() => _ExpandableCardState();

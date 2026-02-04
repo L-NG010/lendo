@@ -189,7 +189,10 @@ final filteredAssetsProvider = Provider<List<Asset>>((ref) {
       List<Asset> filtered = assets;
       if (filterState.selectedCategory != 'All') {
         filtered = assets
-            .where((asset) => asset.category == filterState.selectedCategory)
+            .where(
+              (asset) =>
+                  asset.category.toString() == filterState.selectedCategory,
+            )
             .toList();
       }
 

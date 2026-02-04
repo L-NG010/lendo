@@ -4,12 +4,14 @@ import 'package:lendo/models/asset_model.dart';
 
 class AssetCard extends StatelessWidget {
   final Asset asset;
+  final String categoryName;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const AssetCard({
     super.key,
     required this.asset,
+    required this.categoryName,
     required this.onEdit,
     required this.onDelete,
   });
@@ -21,10 +23,7 @@ class AssetCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.secondary,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.outline,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.outline, width: 1),
       ),
       padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
@@ -43,7 +42,9 @@ class AssetCard extends StatelessWidget {
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: asset.pictureUrl != null && asset.pictureUrl!.isNotEmpty
+                      child:
+                          asset.pictureUrl != null &&
+                              asset.pictureUrl!.isNotEmpty
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(6),
                               child: Image.network(
@@ -52,7 +53,7 @@ class AssetCard extends StatelessWidget {
                                 errorBuilder: (context, error, stackTrace) {
                                   // Fallback to icon if image fails to load
                                   return Icon(
-                                    _getAssetIcon(asset.category.toString()),
+                                    Icons.inventory_2,
                                     color: AppColors.primary,
                                     size: 20,
                                   );
@@ -60,7 +61,7 @@ class AssetCard extends StatelessWidget {
                               ),
                             )
                           : Icon(
-                              _getAssetIcon(asset.category.toString()),
+                              Icons.inventory_2,
                               color: AppColors.primary,
                               size: 20,
                             ),
@@ -106,32 +107,14 @@ class AssetCard extends StatelessWidget {
           ),
           Row(
             children: [
-              Expanded(child: _buildDetailRow('Category:', asset.category.toString())),
-              if (asset.price != null) Expanded(child: _buildDetailRow('Price:', 'Rp ${asset.price}')),
+              Expanded(child: _buildDetailRow('Category:', categoryName)),
+              if (asset.price != null)
+                Expanded(child: _buildDetailRow('Price:', 'Rp ${asset.price}')),
             ],
           ),
         ],
       ),
     );
-  }
-
-  IconData _getAssetIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'electronics':
-      case '1':
-        return Icons.devices;
-      case 'furniture':
-      case '2':
-        return Icons.chair;
-      case 'printer':
-        return Icons.print;
-      case 'projector':
-        return Icons.videocam;
-      case 'laptop':
-        return Icons.laptop;
-      default:
-        return Icons.inventory_2;
-    }
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -151,10 +134,7 @@ class AssetCard extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
+              style: TextStyle(fontSize: 12, color: AppColors.white),
             ),
           ),
         ],
@@ -168,7 +148,7 @@ class AssetCard extends StatelessWidget {
       statusColor = AppColors.primary;
     } else if (status.toLowerCase() == 'borrowed') {
       statusColor = AppColors.outline;
-    } else if   (status.toLowerCase() == 'maintenance') {
+    } else if (status.toLowerCase() == 'maintenance') {
       statusColor = AppColors.red;
     } else if (status.toLowerCase() == 'booking') {
       statusColor = AppColors.gray;

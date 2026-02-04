@@ -5,7 +5,11 @@ import 'package:lendo/models/loan_model.dart';
 import 'package:lendo/widgets/sidebar.dart';
 import 'package:lendo/widgets/loan_card.dart';
 import 'package:lendo/providers/loan_provider.dart';
-import 'package:lendo/providers/profile_provider.dart';
+import 'package:lendo/providers/user_provider.dart';
+import 'package:lendo/widgets/themed_date_picker.dart';
+import 'package:lendo/models/asset_model.dart';
+import 'package:lendo/providers/asset_provider.dart';
+import 'dart:developer' as dev;
 
 class LoanManagementScreen extends ConsumerWidget {
   const LoanManagementScreen({super.key});
@@ -57,9 +61,7 @@ class LoanManagementScreen extends ConsumerWidget {
               children: [
                 // Search bar
                 Expanded(
-                  flex: 2,
                   child: Container(
-                    margin: const EdgeInsets.only(right: AppSpacing.sm),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
@@ -83,12 +85,9 @@ class LoanManagementScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Status filter popup menu with background
+                SizedBox(width: AppSpacing.md),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
+                  height: 48,
                   decoration: BoxDecoration(
                     color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(8),
@@ -98,6 +97,9 @@ class LoanManagementScreen extends ConsumerWidget {
                     builder: (context, ref, child) {
                       final filterState = ref.watch(loanFilterProvider);
                       return PopupMenuButton<String>(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                        ),
                         icon: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -245,12 +247,27 @@ class LoanManagementScreen extends ConsumerWidget {
   }
 
   void _showAddLoanDialog(BuildContext context, WidgetRef ref) {
-    final profilesAsync = ref.watch(profilesProvider);
+    final usersAsync = ref.watch(usersProvider);
     String? selectedUserId;
     String selectedStatus = 'pending';
     final dueDateController = TextEditingController();
     final loanDateController = TextEditingController();
     final reasonController = TextEditingController();
+    List<Asset> selectedAssets = [];
+
+    // Log user data for debugging
+    usersAsync.whenData((users) {
+      dev.log(
+        'Loaded ${users.length} users from edge function',
+        name: 'LoanManagement',
+      );
+      for (var user in users) {
+        dev.log(
+          'User: ${user.rawUserMetadata['name']} (${user.email})',
+          name: 'LoanManagement.Users',
+        );
+      }
+    });
 
     showDialog(
       context: context,
@@ -263,7 +280,7 @@ class LoanManagementScreen extends ConsumerWidget {
                 'Add New Loan',
                 style: TextStyle(color: AppColors.white),
               ),
-              content: Container(
+              content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
                   child: Column(
@@ -272,67 +289,106 @@ class LoanManagementScreen extends ConsumerWidget {
                       // User dropdown
                       _buildDropdownField(
                         label: 'User:',
-                        child: profilesAsync.when(
-                          data: (profiles) {
-                            return DropdownButtonFormField<String>(
-                              value: selectedUserId,
-                              dropdownColor: AppColors.secondary,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.secondary,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: AppColors.outline,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final usersAsync = ref.watch(usersProvider);
+                            return usersAsync.when(
+                              data: (users) {
+                                return DropdownButtonFormField<String>(
+                                  initialValue: selectedUserId,
+                                  dropdownColor: AppColors.secondary,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.background,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                   ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              style: TextStyle(color: AppColors.white),
-                              hint: Text(
-                                'Select user',
-                                style: TextStyle(color: AppColors.gray),
-                              ),
-                              items: profiles.map((profile) {
-                                return DropdownMenuItem(
-                                  value: profile.id,
-                                  child: Text(
-                                    profile.name,
-                                    style: TextStyle(color: AppColors.white),
+                                  style: TextStyle(color: AppColors.white),
+                                  hint: Text(
+                                    'Select user',
+                                    style: TextStyle(color: AppColors.gray),
                                   ),
+                                  items: users.map((user) {
+                                    final userName =
+                                        user.rawUserMetadata['name'] ??
+                                        user.email;
+                                    return DropdownMenuItem(
+                                      value: user.id,
+                                      child: Text(
+                                        userName,
+                                        style: TextStyle(
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedUserId = value;
+                                    });
+                                  },
                                 );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedUserId = value;
-                                });
                               },
+                              loading: () => CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                              error: (_, __) => Text(
+                                'Error loading users',
+                                style: TextStyle(color: AppColors.red),
+                              ),
                             );
                           },
-                          loading: () => CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          error: (_, __) => Text(
-                            'Error loading users',
-                            style: TextStyle(color: AppColors.red),
-                          ),
                         ),
                       ),
                       // Status dropdown
                       _buildDropdownField(
                         label: 'Status:',
                         child: DropdownButtonFormField<String>(
-                          value: selectedStatus,
+                          initialValue: selectedStatus,
                           dropdownColor: AppColors.secondary,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.secondary,
+                            fillColor: AppColors.background,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(color: AppColors.outline),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -359,15 +415,91 @@ class LoanManagementScreen extends ConsumerWidget {
                           },
                         ),
                       ),
-                      _buildAddField(
-                        'Due Date (YYYY-MM-DD):',
-                        dueDateController,
+                      _buildDateField(
+                        label: 'Due Date:',
+                        controller: dueDateController,
+                        context: context,
                       ),
-                      _buildAddField(
-                        'Loan Date (YYYY-MM-DD):',
-                        loanDateController,
+                      _buildDateField(
+                        label: 'Loan Date:',
+                        controller: loanDateController,
+                        context: context,
                       ),
                       _buildAddField('Reason:', reasonController),
+                      const SizedBox(height: 16),
+                      // Asset Selection Section
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Assets:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.gray,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedAssets.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.outline),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            children: selectedAssets.map((asset) {
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  asset.name,
+                                  style: TextStyle(color: AppColors.white),
+                                ),
+                                subtitle: Text(
+                                  asset.code,
+                                  style: TextStyle(color: AppColors.gray),
+                                ),
+                                trailing: IconButton(
+                                  icon: Icon(
+                                    Icons.remove_circle_outline,
+                                    color: AppColors.red,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      selectedAssets.remove(asset);
+                                    });
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      // Add Asset Button
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () async {
+                            final result = await _showAssetSelectionDialog(
+                              context,
+                              ref,
+                              selectedAssets,
+                            );
+                            if (result != null) {
+                              setState(() {
+                                selectedAssets = result;
+                              });
+                            }
+                          },
+                          icon: Icon(
+                            Icons.add_circle,
+                            color: AppColors.primary,
+                          ),
+                          label: Text(
+                            'Add Assets',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -399,6 +531,14 @@ class LoanManagementScreen extends ConsumerWidget {
                             reason: reasonController.text.isEmpty
                                 ? null
                                 : reasonController.text,
+                            loanDetails: selectedAssets
+                                .map(
+                                  (asset) => {
+                                    'asset_id': asset.id,
+                                    'cond_borrow': 'good', // Default condition
+                                  },
+                                )
+                                .toList(),
                           );
                       Navigator.of(context).pop();
                       _showSuccessMessage(context, 'Loan added successfully');
@@ -480,8 +620,71 @@ class LoanManagementScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDateField({
+    required String label,
+    required TextEditingController controller,
+    required BuildContext context,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray,
+            ),
+          ),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () async {
+              final DateTime? picked =
+                  await ThemedDatePicker.showThemedDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+              if (picked != null) {
+                controller.text =
+                    '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.outline, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      controller.text.isEmpty ? 'Select date' : controller.text,
+                      style: TextStyle(
+                        color: controller.text.isEmpty
+                            ? AppColors.gray
+                            : AppColors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.calendar_today, size: 16, color: AppColors.gray),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showUpdateDialog(BuildContext context, WidgetRef ref, LoanModel loan) {
-    final profilesAsync = ref.watch(profilesProvider);
+    // usersProvider moved to Consumer
     String? selectedUserId = loan.userId;
     String selectedStatus = loan.status;
     final dueDateController = TextEditingController(
@@ -503,76 +706,155 @@ class LoanManagementScreen extends ConsumerWidget {
                 'Update Loan',
                 style: TextStyle(color: AppColors.white),
               ),
-              content: Container(
+              content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // User dropdown
-                      _buildDropdownField(
-                        label: 'User:',
-                        child: profilesAsync.when(
-                          data: (profiles) {
-                            return DropdownButtonFormField<String>(
-                              value: selectedUserId,
-                              dropdownColor: AppColors.secondary,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.secondary,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.outline),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Manage Loan Assets',
+                              style: TextStyle(color: AppColors.white),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 8,
                                 ),
                               ),
-                              style: TextStyle(color: AppColors.white),
-                              hint: Text(
-                                'Select user',
-                                style: TextStyle(color: AppColors.gray),
-                              ),
-                              items: profiles.map((profile) {
-                                return DropdownMenuItem(
-                                  value: profile.id,
-                                  child: Text(
-                                    profile.name,
-                                    style: TextStyle(color: AppColors.white),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedUserId = value;
-                                });
+                              onPressed: () {
+                                Navigator.pop(context); // Close Update Dialog
+                                _showLoanDetailsDialog(
+                                  context,
+                                  ref,
+                                  loan,
+                                ); // Open Details Dialog
                               },
+                              child: Text('View Details'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // User dropdown
+                      _buildDropdownField(
+                        label: 'User:',
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final usersAsync = ref.watch(usersProvider);
+                            return usersAsync.when(
+                              data: (users) {
+                                return DropdownButtonFormField<String>(
+                                  initialValue: selectedUserId,
+                                  dropdownColor: AppColors.secondary,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.background,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  style: TextStyle(color: AppColors.white),
+                                  hint: Text(
+                                    'Select user',
+                                    style: TextStyle(color: AppColors.gray),
+                                  ),
+                                  items: users.map((user) {
+                                    final userName =
+                                        user.rawUserMetadata['name'] ??
+                                        user.email;
+                                    return DropdownMenuItem(
+                                      value: user.id,
+                                      child: Text(
+                                        userName,
+                                        style: TextStyle(
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedUserId = value;
+                                    });
+                                  },
+                                );
+                              },
+                              loading: () => CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                              error: (_, __) => Text(
+                                'Error loading users',
+                                style: TextStyle(color: AppColors.red),
+                              ),
                             );
                           },
-                          loading: () => CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                          error: (_, __) => Text(
-                            'Error loading users',
-                            style: TextStyle(color: AppColors.red),
-                          ),
                         ),
                       ),
                       // Status dropdown
                       _buildDropdownField(
                         label: 'Status:',
                         child: DropdownButtonFormField<String>(
-                          value: selectedStatus,
+                          initialValue: selectedStatus,
                           dropdownColor: AppColors.secondary,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.secondary,
+                            fillColor: AppColors.background,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(color: AppColors.outline),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: AppColors.outline,
+                                width: 1,
+                              ),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -599,13 +881,15 @@ class LoanManagementScreen extends ConsumerWidget {
                           },
                         ),
                       ),
-                      _buildAddField(
-                        'Due Date (YYYY-MM-DD):',
-                        dueDateController,
+                      _buildDateField(
+                        label: 'Due Date:',
+                        controller: dueDateController,
+                        context: context,
                       ),
-                      _buildAddField(
-                        'Loan Date (YYYY-MM-DD):',
-                        loanDateController,
+                      _buildDateField(
+                        label: 'Loan Date:',
+                        controller: loanDateController,
+                        context: context,
                       ),
                       _buildAddField('Reason:', reasonController),
                     ],
@@ -652,6 +936,119 @@ class LoanManagementScreen extends ConsumerWidget {
                   },
                   child: Text(
                     'Save',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<List<Asset>?> _showAssetSelectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<Asset> alreadySelected,
+  ) async {
+    final assetsAsync = ref.read(assetsProvider);
+    // Ensure assets are loaded
+    if (!assetsAsync.hasValue) {
+      await ref.refresh(assetsProvider.future);
+    }
+
+    List<Asset> tempSelected = List.from(alreadySelected);
+
+    return showDialog<List<Asset>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final assetsAsync = ref.watch(assetsProvider);
+            return AlertDialog(
+              backgroundColor: AppColors.secondary,
+              title: Text(
+                'Select Assets',
+                style: TextStyle(color: AppColors.white),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: assetsAsync.when(
+                  data: (assets) {
+                    final availableAssets = assets
+                        .where(
+                          (a) =>
+                              a.status == 'available' ||
+                              tempSelected.any((s) => s.id == a.id),
+                        )
+                        .toList();
+
+                    if (availableAssets.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No available assets',
+                          style: TextStyle(color: AppColors.gray),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: availableAssets.length,
+                      itemBuilder: (context, index) {
+                        final asset = availableAssets[index];
+                        final isSelected = tempSelected.any(
+                          (a) => a.id == asset.id,
+                        );
+                        return CheckboxListTile(
+                          title: Text(
+                            asset.name,
+                            style: TextStyle(color: AppColors.white),
+                          ),
+                          subtitle: Text(
+                            'Code: ${asset.code} - ${asset.status}',
+                            style: TextStyle(color: AppColors.gray),
+                          ),
+                          value: isSelected,
+                          activeColor: AppColors.primary,
+                          checkColor: AppColors.white,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                tempSelected.add(asset);
+                              } else {
+                                tempSelected.removeWhere(
+                                  (a) => a.id == asset.id,
+                                );
+                              }
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                  loading: () => Center(child: CircularProgressIndicator()),
+                  error: (e, s) => Center(
+                    child: Text(
+                      'Error: $e',
+                      style: TextStyle(color: AppColors.red),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.gray),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, tempSelected),
+                  child: Text(
+                    'Confirm',
                     style: TextStyle(color: AppColors.primary),
                   ),
                 ),
@@ -727,7 +1124,7 @@ class LoanManagementScreen extends ConsumerWidget {
                   'Loan #${loan.id} Details',
                   style: TextStyle(color: AppColors.white),
                 ),
-                content: Container(
+                content: SizedBox(
                   width: double.maxFinite,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -738,12 +1135,11 @@ class LoanManagementScreen extends ConsumerWidget {
                             color: AppColors.white,
                             fontWeight: FontWeight.bold,
                           ),
-                          dataRowColor:
-                              MaterialStateProperty.resolveWith<Color?>((
-                                states,
-                              ) {
-                                return AppColors.background;
-                              }),
+                          dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                            (states) {
+                              return AppColors.background;
+                            },
+                          ),
                           dataTextStyle: const TextStyle(
                             color: AppColors.white,
                           ),
@@ -852,8 +1248,40 @@ class LoanManagementScreen extends ConsumerWidget {
                         ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () {
-                          // We'll add add functionality later
+                        onPressed: () async {
+                          final selectedAssets =
+                              await _showAssetSelectionDialog(context, ref, []);
+                          if (selectedAssets != null &&
+                              selectedAssets.isNotEmpty) {
+                            for (final asset in selectedAssets) {
+                              try {
+                                await ref
+                                    .read(loansProvider.notifier)
+                                    .createLoanDetails(
+                                      loanId: loan.id,
+                                      assetId: asset
+                                          .id, // Using asset ID (code or id?) check model. details uses assetId (FK to asset table presumably, or is it code?)
+                                      // LoanDetailModel has assetId. LoanService uses `asset_id`.
+                                      // AssetModel has String `id`.
+                                      // So passing asset.id is correct.
+                                      condBorrow: 'good',
+                                    );
+                              } catch (e) {
+                                // ignore individual errors, maybe show toast
+                                print('Error adding asset ${asset.name}: $e');
+                              }
+                            }
+                            Navigator.pop(context);
+                            _showLoanDetailsDialog(
+                              context,
+                              ref,
+                              loan,
+                            ); // Refresh
+                            _showSuccessMessage(
+                              context,
+                              'Assets added to loan',
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -920,7 +1348,7 @@ class LoanManagementScreen extends ConsumerWidget {
             'Edit Loan Detail',
             style: TextStyle(color: AppColors.white),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
               child: Column(

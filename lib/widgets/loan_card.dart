@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:lendo/config/app_config.dart';
 import 'package:lendo/models/loan_model.dart';
@@ -27,11 +28,11 @@ class LoanCard extends StatefulWidget {
 class _LoanCardState extends State<LoanCard> {
   bool _isExpanded = false;
   final _supabase = SupabaseConfig.client;
-  
+
   Future<List<LoanDetailModel>> _loadLoanDetails() async {
     return await widget.onLoadDetails(widget.loan.id);
   }
-  
+
   Future<Asset?> _loadAsset(String assetId) async {
     try {
       final response = await _supabase
@@ -39,10 +40,10 @@ class _LoanCardState extends State<LoanCard> {
           .select()
           .eq('id', assetId)
           .single();
-      
+
       return Asset.fromJson(response);
     } catch (e) {
-      print('Error loading asset $assetId: $e');
+      dev.log('Error loading asset $assetId: $e', name: 'LoanCard');
       return null;
     }
   }
@@ -55,142 +56,134 @@ class _LoanCardState extends State<LoanCard> {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: AppColors.outline,
-          width: 1,
-        ),
+        side: BorderSide(color: AppColors.outline, width: 1),
       ),
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _getStatusColor(widget.loan.status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            _getLoanIcon(widget.loan.status),
-            color: _getStatusColor(widget.loan.status),
-            size: 18,
-          ),
-        ),
-        title: Text(
-          _getStatusText(widget.loan.status),
-          style: TextStyle(
-            color: _getStatusColor(widget.loan.status),
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        subtitle: Text(
-          'Loan #${widget.loan.id} - Due: ${_formatDate(widget.loan.dueDate)}',
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 12,
-          ),
-        ),
-        onExpansionChanged: (bool expanded) {
-          setState(() {
-            _isExpanded = expanded;
-            if (_isExpanded) {
-              widget.onExpand();
-            }
-          });
-        },
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
-              onPressed: widget.onEdit,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints.tight(Size(32, 32)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getStatusColor(widget.loan.status).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
             ),
-            IconButton(
-              icon: Icon(Icons.delete, color: AppColors.red, size: 18),
-              onPressed: widget.onDelete,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints.tight(Size(32, 32)),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              color: AppColors.primary,
+            child: Icon(
+              _getLoanIcon(widget.loan.status),
+              color: _getStatusColor(widget.loan.status),
               size: 18,
+            ),
+          ),
+          title: Text(
+            _getStatusText(widget.loan.status),
+            style: TextStyle(
+              color: _getStatusColor(widget.loan.status),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          subtitle: Text(
+            'Loan #${widget.loan.id} - Due: ${_formatDate(widget.loan.dueDate)}',
+            style: TextStyle(color: AppColors.white, fontSize: 12),
+          ),
+          collapsedIconColor: AppColors.primary,
+          iconColor: AppColors.primary,
+          onExpansionChanged: (bool expanded) {
+            setState(() {
+              _isExpanded = expanded;
+              if (_isExpanded) {
+                widget.onExpand();
+              }
+            });
+          },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit, color: AppColors.primary, size: 18),
+                onPressed: widget.onEdit,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints.tight(Size(32, 32)),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, color: AppColors.red, size: 18),
+                onPressed: widget.onDelete,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints.tight(Size(32, 32)),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                color: AppColors.primary,
+                size: 18,
+              ),
+            ],
+          ),
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: FutureBuilder<List<LoanDetailModel>>(
+                future: _loadLoanDetails(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Loading assets...',
+                          style: TextStyle(fontSize: 12, color: AppColors.gray),
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          style: TextStyle(fontSize: 12, color: AppColors.red),
+                        ),
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'No assets borrowed',
+                          style: TextStyle(fontSize: 12, color: AppColors.gray),
+                        ),
+                      ),
+                    );
+                  } else {
+                    final details = snapshot.data!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Borrowed Assets:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.gray,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...details
+                            .map((detail) => _buildAssetCard(detail))
+                            ,
+                      ],
+                    );
+                  }
+                },
+              ),
             ),
           ],
         ),
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: FutureBuilder<List<LoanDetailModel>>(
-              future: _loadLoanDetails(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'Loading assets...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.gray,
-                        ),
-                      ),
-                    ),
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.red,
-                        ),
-                      ),
-                    ),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'No assets borrowed',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.gray,
-                        ),
-                      ),
-                    ),
-                  );
-                } else {
-                  final details = snapshot.data!;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Borrowed Assets:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.gray,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ...details.map((detail) => _buildAssetCard(detail)).toList(),
-                    ],
-                  );
-                }
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildAssetCard(LoanDetailModel detail) {
-    return FutureBuilder<Asset?> (
+    return FutureBuilder<Asset?>(
       future: _loadAsset(detail.assetId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -207,20 +200,26 @@ class _LoanCardState extends State<LoanCard> {
                 SizedBox(
                   width: 50,
                   height: 50,
-                  child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
                 ),
                 SizedBox(width: AppSpacing.sm),
-                Text('Loading asset...', style: TextStyle(color: AppColors.gray, fontSize: 12)),
+                Text(
+                  'Loading asset...',
+                  style: TextStyle(color: AppColors.gray, fontSize: 12),
+                ),
               ],
             ),
           );
         }
-        
+
         final asset = snapshot.data;
         final assetName = asset?.name ?? 'Asset ${detail.assetId}';
         final assetCode = asset?.code ?? detail.assetId;
         final imageUrl = asset?.pictureUrl;
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: AppSpacing.sm),
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -246,7 +245,11 @@ class _LoanCardState extends State<LoanCard> {
                           imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.image, color: AppColors.gray, size: 24);
+                            return const Icon(
+                              Icons.image,
+                              color: AppColors.gray,
+                              size: 24,
+                            );
                           },
                         ),
                       )
@@ -269,10 +272,7 @@ class _LoanCardState extends State<LoanCard> {
                     const SizedBox(height: 2),
                     Text(
                       'Code: $assetCode',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.gray,
-                      ),
+                      style: TextStyle(fontSize: 11, color: AppColors.gray),
                     ),
                   ],
                 ),
@@ -282,7 +282,10 @@ class _LoanCardState extends State<LoanCard> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
@@ -296,11 +299,13 @@ class _LoanCardState extends State<LoanCard> {
                       ),
                     ),
                   ),
-                  if (detail.condReturn != null)
-                    const SizedBox(height: 4),
+                  if (detail.condReturn != null) const SizedBox(height: 4),
                   if (detail.condReturn != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),

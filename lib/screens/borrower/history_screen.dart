@@ -171,7 +171,7 @@ class BorrowerHistoryScreen extends ConsumerWidget {
 
         return ExpandableCard(
           title:
-              'Loan #${loan.id.length > 8 ? loan.id.substring(0, 8) + '...' : loan.id}',
+              'Loan #${loan.id.length > 8 ? '${loan.id.substring(0, 8)}...' : loan.id}',
           subtitle: 'Status: $statusText',
           statusColor: statusColor,
           statusText: statusText,

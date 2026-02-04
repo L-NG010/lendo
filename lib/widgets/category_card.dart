@@ -43,7 +43,7 @@ class CategoryCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        _getCategoryIcon(category.name),
+                        Icons.category,
                         color: AppColors.primary,
                         size: 24,
                       ),
@@ -92,22 +92,5 @@ class CategoryCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  IconData _getCategoryIcon(String categoryName) {
-    switch (categoryName.toLowerCase()) {
-      case 'printing & scanning':
-        return Icons.print;
-      case 'presentation':
-        return Icons.slideshow;
-      case 'electronics':
-        return Icons.devices;
-      case 'furniture':
-        return Icons.chair;
-      case 'office supplies':
-        return Icons.inventory_2;
-      default:
-        return Icons.category;
-    }
   }
 }

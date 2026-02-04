@@ -198,6 +198,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                   border: Border.all(color: AppColors.outline),
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min, // Make column wrap content
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -226,8 +227,11 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Expanded(
+                    Flexible(
+                      // Use Flexible to let list shrink
+                      fit: FlexFit.loose,
                       child: ListView.builder(
+                        shrinkWrap: true, // Allow list to shrink
                         itemCount: loanDetails.length,
                         itemBuilder: (context, index) {
                           final detail = loanDetails[index];
@@ -274,7 +278,7 @@ class _BorrowerReturnScreenState extends ConsumerState<BorrowerReturnScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.xs),
                                 DropdownButtonFormField<String>(
-                                  value: currentCondition,
+                                  initialValue: currentCondition,
                                   decoration: InputDecoration(
                                     filled: true,
                                     fillColor: AppColors.secondary,

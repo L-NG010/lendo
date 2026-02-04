@@ -162,7 +162,7 @@ class _BorrowerOwnSubmissionsScreenState
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ];
 
                   return ExpandableCard(

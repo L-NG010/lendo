@@ -12,7 +12,7 @@ class DashboardService {
           .select('*')
           .single();
       
-      return response as Map<String, dynamic>;
+      return response;
     } catch (e) {
       throw Exception('Failed to fetch dashboard KPI data: $e');
     }

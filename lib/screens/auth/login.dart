@@ -150,7 +150,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                           if (state.errorMessage != null) {
                             if (mounted) {
-                              print(state.errorMessage);
                               CustomSnackBar.show(
                                 context,
                                 state.errorMessage!,

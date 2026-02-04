@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:lendo/models/user_model.dart';
@@ -31,14 +33,38 @@ class UserService {
 
   /// GET USERS
   Future<List<UserModel>> getAllUsers() async {
-    final response = await http.get(Uri.parse(_baseUrl), headers: _headers);
+    try {
+      final response = await http.get(Uri.parse(_baseUrl), headers: _headers);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final users = data['users'] as List;
-      return users.map((u) => UserModel.fromJson(u)).toList();
-    } else {
-      throw Exception('Fetch users failed: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final users = data['users'] as List;
+
+        final userModels = users.map((u) => UserModel.fromJson(u)).toList();
+
+        for (var user in userModels) {
+          dev.log(
+            'User: ${user.rawUserMetadata['name']} (${user.email})',
+            name: 'UserService.getAllUsers',
+          );
+        }
+
+        return userModels;
+      } else {
+        dev.log(
+          'Failed with status ${response.statusCode}',
+          name: 'UserService.getAllUsers',
+        );
+        dev.log(
+          'Error body: ${response.body}',
+          name: 'UserService.getAllUsers',
+        );
+        throw Exception('Fetch users failed: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      dev.log('Exception: $e', name: 'UserService.getAllUsers');
+      dev.log('StackTrace: $stackTrace', name: 'UserService.getAllUsers');
+      rethrow;
     }
   }
 

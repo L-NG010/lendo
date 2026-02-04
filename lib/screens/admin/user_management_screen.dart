@@ -124,53 +124,85 @@ class UserManagementScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Role filter dropdown
-                Expanded(
-                  child: Container(
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.outline),
+                  ),
+                  child: PopupMenuButton<String>(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
+                    color: AppColors.secondary,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.outline),
+                      side: BorderSide(color: AppColors.outline),
                     ),
-                    child: DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.secondary,
-                      value: filterState.selectedRole,
-                      isExpanded: true,
-
-                      // 🔥 INI YANG MEMPERBAIKI GARIS BAWAH
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-
-                      items: ['All', 'admin', 'officer', 'borrower'].map((
-                        role,
-                      ) {
-                        return DropdownMenuItem(
-                          value: role,
-                          child: Text(
-                            role,
-                            style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 12,
+                    icon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_list,
+                          color: AppColors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          filterState.selectedRole == 'All'
+                              ? 'All Roles'
+                              : filterState.selectedRole[0].toUpperCase() +
+                                    filterState.selectedRole.substring(1),
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.white,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    onSelected: (String result) {
+                      ref
+                          .read(roleFilterProvider.notifier)
+                          .setSelectedRole(result);
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'All',
+                            child: Text(
+                              'All Roles',
+                              style: TextStyle(color: AppColors.white),
                             ),
                           ),
-                        );
-                      }).toList(),
-
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          ref
-                              .read(roleFilterProvider.notifier)
-                              .setSelectedRole(newValue);
-                        }
-                      },
-                    ),
+                          const PopupMenuItem<String>(
+                            value: 'admin',
+                            child: Text(
+                              'Admin',
+                              style: TextStyle(color: AppColors.white),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'officer',
+                            child: Text(
+                              'Officer',
+                              style: TextStyle(color: AppColors.white),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'borrower',
+                            child: Text(
+                              'Borrower',
+                              style: TextStyle(color: AppColors.white),
+                            ),
+                          ),
+                        ],
                   ),
                 ),
               ],
@@ -343,8 +375,7 @@ class UserManagementScreen extends ConsumerWidget {
                         email: emailController.text.trim(),
                         password: passwordController.text,
                         name: nameController.text.trim(), // ✅ FIX
-                        phone:
-                            phoneController.text.trim(), // ✅ FIX PREFIX
+                        phone: phoneController.text.trim(), // ✅ FIX PREFIX
                         role: selectedRole,
                       );
 
@@ -466,7 +497,7 @@ class UserManagementScreen extends ConsumerWidget {
         ),
         backgroundColor: AppColors.secondary,
         content: Text(
-          'Are you sure you want to ${action} $userName?',
+          'Are you sure you want to $action $userName?',
           style: const TextStyle(color: AppColors.white),
         ),
         actions: [
@@ -545,7 +576,7 @@ class UserManagementScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: DropdownButtonFormField<String>(
-        value: currentValue,
+        initialValue: currentValue,
         dropdownColor: AppColors.secondary,
         style: const TextStyle(color: AppColors.white),
         decoration: InputDecoration(

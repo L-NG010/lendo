@@ -349,7 +349,7 @@ class SettingsScreen extends ConsumerWidget {
     TextEditingController majorController,
     TextEditingController lostController,
   ) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () async {
@@ -418,7 +418,7 @@ class SettingsScreen extends ConsumerWidget {
             'Add Penalty Rule',
             style: TextStyle(color: AppColors.white),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,

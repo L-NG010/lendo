@@ -134,7 +134,9 @@ class _BorrowerSubmissionScreenState
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isNotAvailable
-                                          ? AppColors.red.withValues(alpha: 0.5)
+                                          ? AppColors.gray.withValues(
+                                              alpha: 0.3,
+                                            )
                                           : isInCart
                                           ? AppColors.primary
                                           : AppColors.outline,
@@ -143,158 +145,176 @@ class _BorrowerSubmissionScreenState
                                           : (isInCart ? 2 : 1),
                                     ),
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.background,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
+                                  child: Opacity(
+                                    opacity: isNotAvailable ? 0.6 : 1.0,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.background,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              image: asset.pictureUrl != null
+                                                  ? DecorationImage(
+                                                      image: NetworkImage(
+                                                        asset.pictureUrl!,
+                                                      ),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : null,
                                             ),
-                                            image: asset.pictureUrl != null
-                                                ? DecorationImage(
-                                                    image: NetworkImage(
-                                                      asset.pictureUrl!,
-                                                    ),
-                                                    fit: BoxFit.cover,
+                                            child: asset.pictureUrl == null
+                                                ? Icon(
+                                                    Icons.image,
+                                                    size: 16,
+                                                    color: AppColors.gray,
                                                   )
                                                 : null,
                                           ),
-                                          child: asset.pictureUrl == null
-                                              ? Icon(
-                                                  Icons.image,
-                                                  size: 16,
-                                                  color: AppColors.gray,
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                asset.name,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.white,
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  asset.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.white,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                isNotAvailable
-                                                    ? 'Asset unavailable'
-                                                    : 'Stock: ${asset.available}',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: isNotAvailable
-                                                      ? AppColors.red
-                                                      : AppColors.gray,
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    if (isNotAvailable)
+                                                      Icon(
+                                                        Icons.info_outline,
+                                                        size: 14,
+                                                        color: AppColors.gray,
+                                                      ),
+                                                    if (isNotAvailable)
+                                                      const SizedBox(width: 4),
+                                                    Text(
+                                                      isNotAvailable
+                                                          ? 'Unavailable'
+                                                          : 'Stock: ${asset.available}',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: AppColors.gray,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Stack(
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(
-                                                Icons.add_shopping_cart,
-                                                color:
+                                          const SizedBox(width: 12),
+                                          Stack(
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.add_shopping_cart,
+                                                  color:
+                                                      isNotAvailable ||
+                                                          isStockExhausted
+                                                      ? AppColors.gray
+                                                            .withValues(
+                                                              alpha: 0.5,
+                                                            )
+                                                      : AppColors.gray,
+                                                  size: 20,
+                                                ),
+                                                onPressed:
                                                     isNotAvailable ||
                                                         isStockExhausted
-                                                    ? AppColors.gray.withValues(
-                                                        alpha: 0.5,
-                                                      )
-                                                    : AppColors.gray,
-                                                size: 20,
-                                              ),
-                                              onPressed:
-                                                  isNotAvailable ||
-                                                      isStockExhausted
-                                                  ? null
-                                                  : () {
-                                                      setState(() {
-                                                        var existingItemIndex =
-                                                            _cartItems.indexWhere(
-                                                              (item) =>
-                                                                  item['name'] ==
-                                                                  asset.name,
-                                                            );
+                                                    ? null
+                                                    : () {
+                                                        setState(() {
+                                                          var existingItemIndex =
+                                                              _cartItems.indexWhere(
+                                                                (item) =>
+                                                                    item['name'] ==
+                                                                    asset.name,
+                                                              );
 
-                                                        if (existingItemIndex !=
-                                                            -1) {
-                                                          int currentQuantity =
-                                                              _cartItems[existingItemIndex]['quantity']
-                                                                  as int;
-                                                          if (currentQuantity <
-                                                              asset.available) {
-                                                            _cartItems[existingItemIndex]['quantity'] =
-                                                                currentQuantity +
-                                                                1;
+                                                          if (existingItemIndex !=
+                                                              -1) {
+                                                            int
+                                                            currentQuantity =
+                                                                _cartItems[existingItemIndex]['quantity']
+                                                                    as int;
+                                                            if (currentQuantity <
+                                                                asset
+                                                                    .available) {
+                                                              _cartItems[existingItemIndex]['quantity'] =
+                                                                  currentQuantity +
+                                                                  1;
+                                                            }
+                                                          } else {
+                                                            _cartItems.add({
+                                                              'name':
+                                                                  asset.name,
+                                                              'quantity': 1,
+                                                              'stock': asset
+                                                                  .available,
+                                                            });
                                                           }
-                                                        } else {
-                                                          _cartItems.add({
-                                                            'name': asset.name,
-                                                            'quantity': 1,
-                                                            'stock':
-                                                                asset.available,
-                                                          });
-                                                        }
-                                                      });
-                                                    },
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(
-                                                minWidth: 32,
-                                                minHeight: 32,
-                                              ),
-                                            ),
-                                            if (isInCart && quantity > 0)
-                                              Positioned(
-                                                top: 0,
-                                                right: 0,
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(
-                                                    4,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.primary,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                        minWidth: 16,
-                                                        minHeight: 16,
-                                                      ),
-                                                  child: Text(
-                                                    '$quantity',
-                                                    style: const TextStyle(
-                                                      color: AppColors.white,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                        });
+                                                      },
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
                                                     ),
-                                                    textAlign: TextAlign.center,
+                                              ),
+                                              if (isInCart && quantity > 0)
+                                                Positioned(
+                                                  top: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          minWidth: 16,
+                                                          minHeight: 16,
+                                                        ),
+                                                    child: Text(
+                                                      '$quantity',
+                                                      style: const TextStyle(
+                                                        color: AppColors.white,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );
